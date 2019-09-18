@@ -1,0 +1,24 @@
+{
+  "name": "todo-elm",
+  "version": "1.0.0",
+  "description": "TodoMVC using Elm - Demonstration for DevOpenSpace 2019",
+  "main": "./dist/app.js",
+  "scripts": {
+    "start": "parcel serve index.html --no-cache",
+    "build": "elm make ./src/Main.elm --output ./dist/app.js",
+    "release": "cp node_modules/todomvc-app-css/index.css ../Backend/Haskell/static/index.css && cp node_modules/todomvc-common/base.css ../Backend/Haskell/static/base.css && elm make ./src/Main.elm --optimize --output ../Backend/Haskell/static/todo.js"
+  },
+  "author": "Moritz Großmann, Carsten König",
+  "license": "ISC",
+  "devDependencies": {
+    "elm": "0.19.0-bugfix6",
+    "elm-format": "^0.8.1",
+    "elm-hot": "^1.1.0",
+    "node-elm-compiler": "^5.0.3",
+    "parcel-bundler": "^1.12.3"
+  },
+  "dependencies": {
+    "todomvc-app-css": "^2.2.0",
+    "todomvc-common": "^1.0.5"
+  }
+}
