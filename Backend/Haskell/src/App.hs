@@ -15,12 +15,14 @@ import           Network.Wai.Middleware.Cors
 import           Network.Wai.Handler.Warp (run)
 import           Servant
 import qualified Servant.Auth.Server as SAS
+import qualified Api.ListsApi as ListsApi
+import           Api.ListsApi (ListsApi)
+import qualified Api.RouteApi as RouteApi
+import           Api.RouteApi (RouteApi)
 import qualified Api.TodosApi as TodosApi
 import           Api.TodosApi (TodosApi)
 import qualified Api.UsersApi as UsersApi
 import           Api.UsersApi (UsersApi)
-import qualified Api.RouteApi as RouteApi
-import           Api.RouteApi (RouteApi)
 
 getPort :: IO Int
 getPort = return 8080
@@ -49,8 +51,9 @@ app :: Db.Handle -> SAS.JWTSettings -> Application
 app dbHandle jwtSettings = myCors $ do
   let authCfg = UsersApi.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
-  Servant.serveWithContext (Proxy :: Proxy (UsersApi :<|> TodosApi :<|> RouteApi)) cfg $
+  Servant.serveWithContext (Proxy :: Proxy (UsersApi :<|> ListsApi :<|> TodosApi :<|> RouteApi)) cfg $
     UsersApi.server dbHandle jwtSettings 
+    :<|> ListsApi.server dbHandle
     :<|> TodosApi.server dbHandle 
     :<|> RouteApi.server
   where

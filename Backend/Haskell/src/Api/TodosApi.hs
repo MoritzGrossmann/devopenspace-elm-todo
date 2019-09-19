@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
@@ -15,9 +16,14 @@ import           Api.UsersApi (AuthenticatedUser)
 import qualified Api.UsersApi as UsersApi
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
+import qualified Data.ByteString.Lazy as BS
+import qualified Data.ByteString.Lazy.Char8 as BSC
+import           Data.Maybe (isNothing)
 import           Data.Text (Text)
 import qualified Db
 import qualified Db.Tasks as Db
+import qualified Db.Lists as DbL
+import           Models.ListId
 import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
@@ -25,7 +31,9 @@ import qualified Servant.Auth.Server as SAS
 
 
 type TodosApi =
-  "todos" :> Auth '[SA.JWT] AuthenticatedUser :> (
+  Auth '[SA.JWT] AuthenticatedUser :>
+  "list" :> Capture "listId" ListId :>
+  "todos" :> (
     Get '[JSON] [Db.Task]
     :<|> ReqBody '[JSON] Db.Task :> Put '[JSON] Db.Task
     :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
@@ -37,19 +45,25 @@ type TodosApi =
 server :: Db.Handle -> Server TodosApi
 server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers
   where
-    todoHandlers (SAS.Authenticated user) =
-      getAllHandler userName 
-      :<|> updateHandler userName 
-      :<|> newHandler userName 
-      :<|> deleteHandler userName 
-      :<|> queryHandler userName
+    todoHandlers (SAS.Authenticated user) listId =
+      getAllHandler userName listId
+      :<|> updateHandler userName  listId
+      :<|> newHandler userName listId
+      :<|> deleteHandler userName listId
+      :<|> queryHandler userName listId
       where userName = UsersApi.auName user
-    todoHandlers _ = SAS.throwAll err401
+    todoHandlers _ _ = SAS.throwAll err401
 
-    getAllHandler =
-      Db.listTasks
+    checkListAccess listId userName = do
+      notOk <- isNothing <$> DbL.getList userName listId
+      if notOk then throwError (listNotFound listId) else pure ()
+      
+    getAllHandler userName listId = do
+      checkListAccess listId userName
+      Db.listTasks userName listId
 
-    updateHandler userName task = do
+    updateHandler userName listId task = do
+      checkListAccess listId userName
       liftIO $ putStrLn $ "updating task " ++ show (Db.id task)
       Db.modifyTask userName task
       found <- Db.getTask userName (Db.id task)
@@ -57,17 +71,20 @@ server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandl
         Nothing -> throwError notFound
         Just t-> return t
 
-    newHandler userName txt = do
-      task <- Db.insertTask userName txt
+    newHandler userName listId txt = do
+      checkListAccess listId userName
+      task <- Db.insertTask userName listId txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show (Db.id task)
       return task
 
-    deleteHandler userName tId = do
+    deleteHandler userName listId tId = do
+      checkListAccess listId userName
       Db.deleteTask userName tId
       liftIO $ putStrLn $ "deleted task " ++ show tId
-      Db.listTasks userName
+      Db.listTasks userName listId
 
-    queryHandler userName tId = do
+    queryHandler userName listId tId = do
+      checkListAccess listId userName
       liftIO $ putStrLn $ "getting task " ++ show tId
       found <- Db.getTask userName tId
       case found of
@@ -80,3 +97,6 @@ server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandl
 
 notFound :: ServerError
 notFound = err404 { errBody = "sorry - don't know this task" }
+
+listNotFound :: ListId -> ServerError
+listNotFound (ListId lId) = err404 { errBody = BS.concat ["List [", BSC.pack (show lId), "] not found"] }
