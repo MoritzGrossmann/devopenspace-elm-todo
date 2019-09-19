@@ -5,6 +5,7 @@ module Models.User
   , UserName
   , create
   , validate
+  , validatePassword
   ) where
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -40,3 +41,7 @@ create Login{..} =
 validate :: User -> Login -> Bool
 validate User{userPwHash} Login{password} =
   BC.validatePassword userPwHash $ encodeUtf8 password
+
+validatePassword :: User -> Text -> Bool
+validatePassword User{userPwHash} pwd =
+  BC.validatePassword userPwHash $ encodeUtf8 pwd

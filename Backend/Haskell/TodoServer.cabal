@@ -17,6 +17,7 @@ library
   exposed-modules:     App
   other-modules:       Api.RouteApi
                      , Api.TodosApi
+                     , Api.UsersApi
                      , Db
                      , Db.Internal
                      , Db.Tasks

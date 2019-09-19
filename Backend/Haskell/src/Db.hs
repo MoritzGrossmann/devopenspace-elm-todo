@@ -3,6 +3,7 @@
 module Db
   ( Handle
   , initDb
+  , useHandle
   ) where
 
 import           Control.Concurrent.MVar (newMVar)
