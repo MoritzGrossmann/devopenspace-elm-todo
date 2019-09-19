@@ -51,7 +51,25 @@ route baseUrl =
                 |> List.filter (not << String.isEmpty)
                 |> List.map UrlP.s
                 |> List.foldr (</>) UrlP.top
+
+        filterParser frag =
+            frag
+                |> Maybe.map
+                    (\f ->
+                        case f of
+                            "active" ->
+                                Active
+
+                            "completed" ->
+                                Completed
+
+                            _ ->
+                                All
+                    )
+                |> Maybe.withDefault All
     in
     UrlP.oneOf
         [ UrlP.map Login (basePart </> UrlP.s "login")
+        , UrlP.map Lists (basePart </> UrlP.s "lists")
+        , UrlP.map List (basePart </> UrlP.s "lists" </> UrlP.int </> UrlP.fragment filterParser)
         ]
