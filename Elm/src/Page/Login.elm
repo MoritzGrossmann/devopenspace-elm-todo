@@ -18,6 +18,7 @@ import Html.Events as Ev
 import Http
 import Page
 import RemoteData exposing (RemoteData, WebData)
+import Routes exposing (Route)
 import Session exposing (Login(..), Session)
 
 
@@ -26,6 +27,7 @@ type alias Model =
     , password : String
     , session : Session
     , token : WebData String
+    , transitionTo : Maybe Route
     }
 
 
@@ -46,11 +48,11 @@ type alias Page msg =
     Page.Page msg Model Msg
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> ( Page msg, Cmd msg )
-init wrapMsg session =
+init : (Page.PageMsg Msg -> msg) -> Session -> Maybe Route -> ( Page msg, Cmd msg )
+init wrapMsg session transitionTo =
     let
         pageInit _ =
-            ( { username = "", password = "", session = session, token = RemoteData.NotAsked }, Cmd.none )
+            ( { username = "", password = "", session = session, token = RemoteData.NotAsked, transitionTo = transitionTo }, Cmd.none )
     in
     Page.init wrapMsg pageInit view update subscriptions session
 
@@ -68,12 +70,17 @@ update msg model =
             ( { model | password = password }, Cmd.none )
 
         Submit ->
-            ( { model | token = RemoteData.Loading }, Api.Session.post model LoginResult model.username model.password )
+            ( { model | token = RemoteData.Loading }, Api.Session.post model.session LoginResult model.username model.password )
 
         LoginResult result ->
             case result of
                 Ok token ->
-                    ( { model | token = RemoteData.Success token, session = Session.updateLogin model.session (LoggedIn token) }, Cmd.none )
+                    ( { model
+                        | token = RemoteData.Success token
+                        , session = Session.updateLogin model.session (LoggedIn token)
+                      }
+                    , Session.navigateTo model (model.transitionTo |> Maybe.withDefault Routes.Lists)
+                    )
 
                 Err error ->
                     ( { model | token = RemoteData.Failure error }, Cmd.none )

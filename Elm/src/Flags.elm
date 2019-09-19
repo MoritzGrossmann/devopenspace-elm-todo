@@ -1,10 +1,11 @@
-module Flags exposing (BaseUrlPath, Flags, buildUrl, makeUrl)
+module Flags exposing (BaseUrlPath, Flags, buildUrl, makeApiUrl, makeUrl)
 
 import Url.Builder as Url
 
 
 type alias Flags =
     { baseUrlPath : BaseUrlPath
+    , apiUrl : BaseUrlPath
     }
 
 
@@ -37,3 +38,8 @@ buildUrl baseUrlPath path query fragment =
 makeUrl : Flags -> List String -> List Url.QueryParameter -> Maybe String -> String
 makeUrl flags path query fragment =
     buildUrl flags.baseUrlPath path query fragment
+
+
+makeApiUrl : Flags -> List String -> List Url.QueryParameter -> Maybe String -> String
+makeApiUrl flags path query fragment =
+    buildUrl flags.apiUrl path query fragment

@@ -5,6 +5,7 @@ import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import Page
 import Page.List as ListPage
+import Page.Lists as ListsPage
 import Page.Login as LoginPage
 import Routes exposing (Route)
 import Session exposing (Login(..), Session, getNavKey)
@@ -50,6 +51,7 @@ init flags location key =
 type Model
     = Login (LoginPage.Page Msg)
     | List (ListPage.Page Msg)
+    | Lists (ListsPage.Page Msg)
 
 
 type Msg
@@ -58,6 +60,7 @@ type Msg
     | UrlChanged Url
     | ListMsg (Page.PageMsg ListPage.Msg)
     | LoginMsg (Page.PageMsg LoginPage.Msg)
+    | ListsMsg (Page.PageMsg ListsPage.Msg)
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
@@ -66,7 +69,7 @@ initPage session route =
         Routes.Login ->
             let
                 ( pageModel, pageCmd ) =
-                    LoginPage.init LoginMsg session
+                    LoginPage.init LoginMsg session Nothing
             in
             ( Login pageModel, pageCmd )
 
@@ -80,9 +83,9 @@ initPage session route =
         Routes.Lists ->
             let
                 ( pageModel, pageCmd ) =
-                    LoginPage.init LoginMsg session
+                    ListsPage.init ListsMsg session
             in
-            ( Login pageModel, pageCmd )
+            ( Lists pageModel, pageCmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -131,6 +134,9 @@ update msg model =
         LoginMsg pageMsg ->
             updateLogin pageMsg model
 
+        ListsMsg pageMsg ->
+            updateLists pageMsg model
+
 
 updateLogin : Page.PageMsg LoginPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg pageModel =
@@ -160,6 +166,20 @@ updateList msg pageModel =
             ( pageModel, Cmd.none )
 
 
+updateLists : Page.PageMsg ListsPage.Msg -> Model -> ( Model, Cmd Msg )
+updateLists msg pageModel =
+    case pageModel of
+        Lists listsModel ->
+            let
+                ( newListsModel, cmd ) =
+                    Page.update msg listsModel
+            in
+            ( Lists newListsModel, cmd )
+
+        _ ->
+            ( pageModel, Cmd.none )
+
+
 view : Model -> Document Msg
 view model =
     let
@@ -170,6 +190,9 @@ view model =
 
                 Login loginModel ->
                     Page.view loginModel
+
+                Lists listsModel ->
+                    Page.view listsModel
     in
     { title = "TODO - Elm"
     , body = [ page ]
@@ -193,4 +216,7 @@ withSession with model =
             with (Page.getSession page)
 
         Login page ->
+            with (Page.getSession page)
+
+        Lists page ->
             with (Page.getSession page)
