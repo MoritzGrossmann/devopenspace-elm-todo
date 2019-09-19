@@ -24,7 +24,6 @@ library
                      , Models.Tasks
                      , Models.User
                      , Page
-                     , Ws
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bcrypt
@@ -32,16 +31,16 @@ library
                      , blaze-markup
                      , bytestring
                      , mtl
+                     , servant-auth
+                     , servant-auth-server
                      , servant-blaze
                      , servant-server
-                     , servant-websockets
                      , sqlite-simple
                      , stm
                      , text
                      , wai
                      , wai-cors
                      , warp
-                     , websockets
   default-language:    Haskell2010
   ghc-options:       -Wall
 
