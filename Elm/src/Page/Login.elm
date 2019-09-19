@@ -115,6 +115,6 @@ view model =
                 , Ev.onInput UpdatePassword
                 ]
                 []
-            , H.button [ Attr.style "display" "none", Ev.onClick Submit, Attr.type_ "submit" ] []
+            , H.button [ Attr.style "display" "none", Attr.type_ "submit" ] []
             ]
         ]
