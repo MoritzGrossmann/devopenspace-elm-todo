@@ -8,8 +8,10 @@
 
 module Api.UsersApi
     ( UsersApi
+    , AuthenticatedUser (..)
     , server
     , authCheck
+    , hoistServerWithAuth
     ) where
 
 
