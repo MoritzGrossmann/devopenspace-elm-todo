@@ -19,8 +19,6 @@ import qualified Api.TodosApi as TodosApi
 import           Api.TodosApi (TodosApi)
 import qualified Api.RouteApi as RouteApi
 import           Api.RouteApi (RouteApi)
-import qualified Ws
-
 
 getPort :: IO Int
 getPort = return 8080
@@ -35,18 +33,17 @@ startApp = do
   dbPath <- getDbPath
   putStrLn $ "initializing Database in " ++ dbPath
   dbHandle <- Db.initDb dbPath
-  wsHandle <- Ws.initialize
 
   port <- getPort
   putStrLn $ "starting Server on " ++ show port
-  run port $ app dbHandle wsHandle
+  run port $ app dbHandle
 
 
-app :: Db.Handle -> Ws.Handle -> Application
-app dbHandle wsHandle =
+app :: Db.Handle -> Application
+app dbHandle =
   myCors $
   Servant.serve (Proxy :: Proxy (TodosApi :<|> RouteApi)) $
-    TodosApi.server dbHandle wsHandle :<|> RouteApi.server
+    TodosApi.server dbHandle :<|> RouteApi.server
   where
     myCors = cors $ const $ Just myPolicy
     myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods
