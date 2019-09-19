@@ -1,9 +1,10 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, ScopedTypeVariables #-}
 
 module Db.Lists
   ( ListId
   , List (..)
   , createTables
+  , listExists
   , getList
   , listLists
   , insertList
@@ -29,25 +30,34 @@ createTables = useHandle $ \conn ->
     \user NVARCHAR(255) NOT NULL, \
     \name NVARCHAR(255) NOT NULL)"
 
+listExists :: (MonadReader Handle m, MonadIO m) => UserName -> ListId -> m Bool
+listExists userName lId = useHandle $ \conn -> do
+  (rows :: [(Int, Int)]) <- Sql.queryNamed conn
+    "SELECT rowid, 1 FROM lists WHERE rowid = :id AND user = :name LIMIT 1"
+    [ ":id" := lId, ":name" := userName ]
+  pure $ not $ null rows
+
 getList :: (MonadReader Handle m, MonadIO m) => UserName -> ListId -> m (Maybe List)
 getList userName lId = useHandle $ \conn ->
-  listToMaybe . map toList <$> Sql.queryNamed conn 
-    "SELECT lists.name, lists.user, COUNT(*) as cnt \
-    \FROM lists, todos \
-    \WHERE lists.rowid = :id AND lists.user = :user AND todos.listId = :id \
-    \GROUP BY lists.name, lists.user" 
+  listToMaybe . map toList <$> Sql.queryNamed conn
+    "SELECT lists.name, lists.user, (SELECT COUNT(*) FROM todos WHERE todos.listId = :id) as cnt \
+    \FROM lists \
+    \WHERE lists.rowid = :id AND lists.user = :user"
     [ ":id" := lId, ":user" := userName ]
   where
     toList :: (Text, Text, Int) -> List
-    toList (ln, _, nr) = List lId ln nr
+    toList (ln, _, cnt) = List lId ln cnt
 
 
 listLists :: (MonadReader Handle m, MonadIO m) => UserName -> m [List]
 listLists userName = useHandle $ \conn ->
-  -- TODO: Anzahl offene aus Todos
-  map toList <$> Sql.query conn "SELECT rowid,name FROM lists WHERE user=?" (Sql.Only userName)
+  map toList <$> Sql.queryNamed conn
+    "SELECT lists.rowid, lists.name, (SELECT COUNT(*) FROM todos WHERE todos.listId = lists.rowid) as cnt \
+    \FROM lists \
+    \WHERE lists.user=:user"
+    [ ":user" := userName ]
   where
-    toList (lId,ln) = List lId ln 0
+    toList (lId,ln,cnt) = List lId ln cnt
 
 
 insertList :: (MonadReader Handle m, MonadIO m) => UserName -> Text -> m List

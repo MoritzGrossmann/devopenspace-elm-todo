@@ -18,7 +18,6 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
-import           Data.Maybe (isNothing)
 import           Data.Text (Text)
 import qualified Db
 import qualified Db.Tasks as Db
@@ -55,9 +54,9 @@ server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandl
     todoHandlers _ _ = SAS.throwAll err401
 
     checkListAccess listId userName = do
-      notOk <- isNothing <$> DbL.getList userName listId
-      if notOk then throwError (listNotFound listId) else pure ()
-      
+      exists <- DbL.listExists userName listId
+      if not exists then throwError (listNotFound listId) else pure ()
+
     getAllHandler userName listId = do
       checkListAccess listId userName
       Db.listTasks userName listId
