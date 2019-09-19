@@ -215,11 +215,7 @@
 {"id":4711,"listId":42,"text":"Task-Name","finished":false}
 ```
 
-## PUT /list/:listId/todos
-
-### Captures:
-
-- *id*: ID der Liste die benutzt werden soll
+## PUT /todos
 
 ### Request:
 
@@ -250,11 +246,10 @@
 {"id":4711,"listId":42,"text":"Task-Name","finished":false}
 ```
 
-## DELETE /list/:listId/todos/:id
+## DELETE /todos/:id
 
 ### Captures:
 
-- *id*: ID der Liste die benutzt werden soll
 - *id*: ID des Tasks der benutzt werden soll
 
 ### Response:
@@ -270,26 +265,13 @@
 - Example (`application/json;charset=utf-8`, `application/json`):
 
 ```javascript
-[]
+
 ```
 
-- Example (`application/json;charset=utf-8`, `application/json`):
-
-```javascript
-[{"id":4711,"listId":42,"text":"Task-Name","finished":false}]
-```
-
-- Example (`application/json;charset=utf-8`):
-
-```javascript
-[{"id":4711,"listId":42,"text":"Task-Name","finished":false},{"id":4711,"listId":42,"text":"Task-Name","finished":false}]
-```
-
-## GET /list/:listId/todos/:id
+## GET /todos/:id
 
 ### Captures:
 
-- *id*: ID der Liste die benutzt werden soll
 - *id*: ID des Tasks der benutzt werden soll
 
 ### Response:

@@ -32,14 +32,17 @@ import           Servant.Docs
 
 
 type TodosApi =
-  Auth '[SA.JWT] AuthenticatedUser :>
-  "list" :> Capture "listId" ListId :>
-  "todos" :> (
-    Get '[JSON] [Db.Task]
-    :<|> ReqBody '[JSON] Db.Task :> Put '[JSON] Db.Task
-    :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
-    :<|> Capture "id" Db.TaskId :> Delete '[JSON] [Db.Task]
-    :<|> Capture "id" Db.TaskId :> Get '[JSON] Db.Task
+  Auth '[SA.JWT] AuthenticatedUser :> (
+    "list" :> Capture "listId" ListId :>
+      "todos" :> (
+        Get '[JSON] [Db.Task]
+        :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
+      )
+    :<|> "todos" :> (
+        ReqBody '[JSON] Db.Task :> Put '[JSON] Db.Task
+        :<|> Capture "id" Db.TaskId :> Delete '[JSON] NoContent
+        :<|> Capture "id" Db.TaskId :> Get '[JSON] Db.Task
+    )
   )
 
 instance ToCapture (Capture "id" Db.TaskId) where
@@ -52,14 +55,16 @@ instance ToCapture (Capture "listId" ListId) where
 server :: Db.Handle -> Server TodosApi
 server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers
   where
-    todoHandlers (SAS.Authenticated user) listId =
-      getAllHandler userName listId
-      :<|> updateHandler userName  listId
-      :<|> newHandler userName listId
-      :<|> deleteHandler userName listId
-      :<|> queryHandler userName listId
+    todoHandlers (SAS.Authenticated user) = withListId userName :<|> withoutListId userName
       where userName = UsersApi.auName user
-    todoHandlers _ _ = SAS.throwAll err401
+    todoHandlers _ = SAS.throwAll err401
+    withListId userName listId =
+      getAllHandler userName listId
+      :<|> newHandler userName listId
+    withoutListId userName =
+      updateHandler userName
+      :<|> deleteHandler userName
+      :<|> queryHandler userName
 
     checkListAccess listId userName = do
       exists <- DbL.listExists userName listId
@@ -69,8 +74,7 @@ server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandl
       checkListAccess listId userName
       Db.listTasks userName listId
 
-    updateHandler userName listId task = do
-      checkListAccess listId userName
+    updateHandler userName task = do
       liftIO $ putStrLn $ "updating task " ++ show (Db.id task)
       Db.modifyTask userName task
       found <- Db.getTask userName (Db.id task)
@@ -79,19 +83,16 @@ server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandl
         Just t-> return t
 
     newHandler userName listId txt = do
-      checkListAccess listId userName
       task <- Db.insertTask userName listId txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show (Db.id task)
       return task
 
-    deleteHandler userName listId tId = do
-      checkListAccess listId userName
+    deleteHandler userName tId = do
       Db.deleteTask userName tId
       liftIO $ putStrLn $ "deleted task " ++ show tId
-      Db.listTasks userName listId
+      pure NoContent
 
-    queryHandler userName listId tId = do
-      checkListAccess listId userName
+    queryHandler userName tId = do
       liftIO $ putStrLn $ "getting task " ++ show tId
       found <- Db.getTask userName tId
       case found of
