@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 
 
-module RouteApi
+module Api.RouteApi
     ( RouteApi
     , server
     ) where

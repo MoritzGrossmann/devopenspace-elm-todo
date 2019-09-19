@@ -4,8 +4,8 @@
 {-# LANGUAGE FlexibleContexts  #-}
 
 
-module RestApi
-    ( RestApi
+module Api.TodosApi
+    ( TodosApi
     , server
     ) where
 
@@ -20,7 +20,7 @@ import           Servant.API.WebSocket (WebSocket)
 import qualified Ws
 
 
-type RestApi =
+type TodosApi =
   "todos" :> (
     Get '[JSON] [Db.Task]
     :<|> ReqBody '[JSON] Db.Task :> Put '[JSON] Db.Task
@@ -31,8 +31,8 @@ type RestApi =
   )
 
 
-server :: Db.Handle -> Ws.Handle -> Server RestApi
-server dbHandle wsHandle = hoistServer (Proxy :: Proxy RestApi) toHandle todoHandlers
+server :: Db.Handle -> Ws.Handle -> Server TodosApi
+server dbHandle wsHandle = hoistServer (Proxy :: Proxy TodosApi) toHandle todoHandlers
   where
     todoHandlers =
       getAllHandler :<|> updateHandler :<|> newHandler :<|> deleteHandler :<|> queryHandler :<|> wsHandler

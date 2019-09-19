@@ -15,13 +15,13 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     App
-  other-modules:       Db
+  other-modules:       Api.RouteApi
+                     , Api.TodosApi
+                     , Db
                      , Db.Internal
                      , Db.Tasks
                      , Models.Tasks
                      , Page
-                     , RestApi
-                     , RouteApi
                      , Ws
   build-depends:       base >= 4.7 && < 5
                      , aeson

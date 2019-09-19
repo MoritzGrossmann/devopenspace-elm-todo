@@ -15,10 +15,10 @@ import           Network.Wai (Application)
 import           Network.Wai.Middleware.Cors
 import           Network.Wai.Handler.Warp (run)
 import           Servant
-import qualified RestApi
-import           RestApi (RestApi)
-import qualified RouteApi
-import           RouteApi (RouteApi)
+import qualified Api.TodosApi as TodosApi
+import           Api.TodosApi (TodosApi)
+import qualified Api.RouteApi as RouteApi
+import           Api.RouteApi (RouteApi)
 import qualified Ws
 
 
@@ -45,8 +45,8 @@ startApp = do
 app :: Db.Handle -> Ws.Handle -> Application
 app dbHandle wsHandle =
   myCors $
-  Servant.serve (Proxy :: Proxy (RestApi :<|> RouteApi)) $
-    RestApi.server dbHandle wsHandle :<|> RouteApi.server
+  Servant.serve (Proxy :: Proxy (TodosApi :<|> RouteApi)) $
+    TodosApi.server dbHandle wsHandle :<|> RouteApi.server
   where
     myCors = cors $ const $ Just myPolicy
     myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods
