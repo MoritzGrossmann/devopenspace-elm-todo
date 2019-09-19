@@ -37,34 +37,39 @@ type TodosApi =
 server :: Db.Handle -> Server TodosApi
 server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers
   where
-    todoHandlers (SAS.Authenticated _) =
-      getAllHandler :<|> updateHandler :<|> newHandler :<|> deleteHandler :<|> queryHandler
+    todoHandlers (SAS.Authenticated user) =
+      getAllHandler userName 
+      :<|> updateHandler userName 
+      :<|> newHandler userName 
+      :<|> deleteHandler userName 
+      :<|> queryHandler userName
+      where userName = UsersApi.auName user
     todoHandlers _ = SAS.throwAll err401
 
     getAllHandler =
       Db.listTasks
 
-    updateHandler task = do
+    updateHandler userName task = do
       liftIO $ putStrLn $ "updating task " ++ show (Db.id task)
-      Db.modifyTask task
-      found <- Db.getTask (Db.id task)
+      Db.modifyTask userName task
+      found <- Db.getTask userName (Db.id task)
       case found of
         Nothing -> throwError notFound
         Just t-> return t
 
-    newHandler txt = do
-      task <- Db.insertTask txt
+    newHandler userName txt = do
+      task <- Db.insertTask userName txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show (Db.id task)
       return task
 
-    deleteHandler tId = do
-      Db.deleteTask tId
+    deleteHandler userName tId = do
+      Db.deleteTask userName tId
       liftIO $ putStrLn $ "deleted task " ++ show tId
-      Db.listTasks
+      Db.listTasks userName
 
-    queryHandler tId = do
+    queryHandler userName tId = do
       liftIO $ putStrLn $ "getting task " ++ show tId
-      found <- Db.getTask tId
+      found <- Db.getTask userName tId
       case found of
         Nothing -> throwError notFound
         Just task -> return task
