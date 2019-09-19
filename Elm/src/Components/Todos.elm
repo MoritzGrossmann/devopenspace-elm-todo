@@ -1,4 +1,4 @@
-module Todos exposing
+module Components.Todos exposing
     ( Filter(..)
     , Id
     , Item

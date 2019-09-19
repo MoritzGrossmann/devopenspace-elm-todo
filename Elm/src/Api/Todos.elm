@@ -1,37 +1,35 @@
-module Api.Todos exposing (Url, delete, get, getAll, new, update)
+module Api.Todos exposing (delete, get, getAll, new, update)
 
+import Components.Todos as Todos
 import Http
 import Json.Decode as Decode
 import Json.Encode as Enc
-import Todos
+import Models.List as TodoList
+import Session exposing (Session)
 
 
-type alias Url =
-    String
-
-
-get : Url -> (Result Http.Error Todos.Item -> msg) -> Todos.Id -> Cmd msg
-get baseUrl toMsg todoId =
+get : Session -> (Result Http.Error Todos.Item -> msg) -> TodoList.Id -> Todos.Id -> Cmd msg
+get session toMsg listId todoId =
     Http.get
-        { url = baseUrl ++ "todos/" ++ Todos.idToString todoId
+        { url = Session.makeApiUrl session [ "lists", String.fromInt listId, "todos", Todos.idToString todoId ] [] Nothing
         , expect = Http.expectJson toMsg Todos.itemDecoder
         }
 
 
-getAll : Url -> (Result Http.Error (List Todos.Item) -> msg) -> Cmd msg
-getAll baseUrl toMsg =
+getAll : Session -> (Result Http.Error (List Todos.Item) -> msg) -> TodoList.Id -> Cmd msg
+getAll session toMsg todoList =
     Http.get
-        { url = baseUrl ++ "todos"
+        { url = Session.makeApiUrl session [ "lists", String.fromInt todoList, "todos" ] [] Nothing
         , expect = Http.expectJson toMsg (Decode.list Todos.itemDecoder)
         }
 
 
-update : Url -> (Result Http.Error Todos.Item -> msg) -> Todos.Item -> Cmd msg
-update baseUrl toMsg todoItem =
+update : Session -> (Result Http.Error Todos.Item -> msg) -> TodoList.Id -> Todos.Item -> Cmd msg
+update session toMsg todoList todoItem =
     Http.request
         { method = "put"
         , headers = []
-        , url = baseUrl ++ "todos"
+        , url = Session.makeApiUrl session [ "lists", String.fromInt todoList, "todos" ] [] Nothing
         , body = Http.jsonBody (Todos.encodeItem todoItem)
         , expect = Http.expectJson toMsg Todos.itemDecoder
         , timeout = Nothing
@@ -39,12 +37,12 @@ update baseUrl toMsg todoItem =
         }
 
 
-delete : Url -> (Result Http.Error (List Todos.Item) -> msg) -> Todos.Id -> Cmd msg
-delete baseUrl toMsg todoId =
+delete : Session -> (Result Http.Error (List Todos.Item) -> msg) -> TodoList.Id -> Todos.Id -> Cmd msg
+delete session toMsg todoList todo =
     Http.request
         { method = "delete"
-        , headers = []
-        , url = baseUrl ++ "todos/" ++ Todos.idToString todoId
+        , headers = Session.authHeader session
+        , url = Session.makeApiUrl session [ "lists", String.fromInt todoList, "todos", Todos.idToString todo ] [] Nothing
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg (Decode.list Todos.itemDecoder)
         , timeout = Nothing
@@ -52,10 +50,10 @@ delete baseUrl toMsg todoId =
         }
 
 
-new : Url -> (Result Http.Error Todos.Item -> msg) -> String -> Cmd msg
-new baseUrl toMsg text =
+new : Session -> (Result Http.Error Todos.Item -> msg) -> TodoList.Id -> String -> Cmd msg
+new session toMsg todoList text =
     Http.post
-        { url = baseUrl ++ "todos"
+        { url = Session.makeApiUrl session [ "lists", String.fromInt todoList, "todos" ] [] Nothing
         , body = Http.jsonBody (Enc.string text)
         , expect = Http.expectJson toMsg Todos.itemDecoder
         }

@@ -1,17 +1,19 @@
 module Page.List exposing (Model, Msg, Page, init, update, view)
 
+import Api.Lists
 import Api.Todos as Api
 import Browser.Dom as Dom
+import Components.Todos as Todos exposing (Filter(..), Todos)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Decode as Json
-import Models.List as List
+import Models.List as TodoList
 import Page
+import RemoteData exposing (WebData)
 import Session exposing (Session)
 import Task
-import Todos exposing (Filter(..), Todos)
 
 
 type alias Page msg =
@@ -24,7 +26,8 @@ type alias Model =
     , editingItem : Maybe { id : Todos.Id, text : String }
     , activeFilter : Filter
     , session : Session
-    , listMetaData : Maybe List.MetaData
+    , listId : TodoList.Id
+    , listMetaData : WebData TodoList.MetaData
     }
 
 
@@ -43,9 +46,10 @@ type Msg
     | ToggleAll Bool
     | ItemsReceived (Result Http.Error (List Todos.Item))
     | ItemReceived (Result Http.Error Todos.Item)
+    | ListMetaDataReceived (Result Http.Error TodoList.MetaData)
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> Filter -> Int -> ( Page msg, Cmd msg )
+init : (Page.PageMsg Msg -> msg) -> Session -> Filter -> TodoList.Id -> ( Page msg, Cmd msg )
 init wrap session filter listId =
     let
         pageInit _ =
@@ -54,10 +58,12 @@ init wrap session filter listId =
               , editingItem = Nothing
               , activeFilter = filter
               , session = session
-              , listMetaData = Nothing
+              , listMetaData = RemoteData.Loading
+              , listId = listId
               }
             , Cmd.batch
-                [ Api.getAll session.flags.baseUrlPath ItemsReceived
+                [ Api.getAll session ItemsReceived listId
+                , Api.Lists.byId session ListMetaDataReceived listId
                 ]
             )
     in
@@ -97,7 +103,7 @@ update msg model =
         AddTodo ->
             let
                 insertCmd =
-                    Api.new model.session.flags.baseUrlPath ItemReceived model.newText
+                    Api.new model.session ItemReceived model.listId model.newText
             in
             ( { model | newText = "" }, insertCmd )
 
@@ -108,7 +114,7 @@ update msg model =
 
                 updateCmd =
                     newItem
-                        |> Maybe.map (Api.update model.session.flags.baseUrlPath ItemReceived)
+                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
                         |> Maybe.withDefault Cmd.none
             in
             ( { model | todos = newTodos }, updateCmd )
@@ -116,7 +122,7 @@ update msg model =
         DeleteItem itemId ->
             let
                 deleteCmd =
-                    Api.delete model.session.flags.baseUrlPath ItemsReceived itemId
+                    Api.delete model.session ItemsReceived model.listId itemId
 
                 newTodos =
                     Todos.deleteItem itemId model.todos
@@ -157,7 +163,7 @@ update msg model =
 
                 updateCmd =
                     updatedItem
-                        |> Maybe.map (Api.update model.session.flags.baseUrlPath ItemReceived)
+                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
                         |> Maybe.withDefault Cmd.none
             in
             ( { model
@@ -181,7 +187,7 @@ update msg model =
                                         Todos.deleteItem item.id model.todos
 
                                     deleteCmd =
-                                        Api.delete model.session.flags.baseUrlPath ItemsReceived item.id
+                                        Api.delete model.session ItemsReceived model.listId item.id
                                 in
                                 ( deleteCmd :: cmds, newTodos )
                             )
@@ -204,7 +210,7 @@ update msg model =
 
                                     toggleCmd =
                                         toggledItem
-                                            |> Maybe.map (Api.update model.session.flags.baseUrlPath ItemReceived)
+                                            |> Maybe.map (Api.update model.session ItemReceived model.listId)
                                             |> Maybe.withDefault Cmd.none
                                 in
                                 ( toggleCmd :: cmds, newTodos )
@@ -226,6 +232,12 @@ update msg model =
         ItemReceived (Err _) ->
             -- for this Demo we ignore communication errors - sorry
             ( model, Cmd.none )
+
+        ListMetaDataReceived (Ok metaData) ->
+            ( { model | listMetaData = RemoteData.Success metaData }, Cmd.none )
+
+        ListMetaDataReceived (Err httpError) ->
+            ( { model | listMetaData = RemoteData.Failure httpError }, Cmd.none )
 
 
 view : Model -> Html Msg

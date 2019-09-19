@@ -6,6 +6,7 @@ module Session exposing
     , getNavKey
     , getUrl
     , init
+    , makeApiUrl
     , makeSessionUrl
     , navigateTo
     , replaceUrl
@@ -49,6 +50,11 @@ updateLogin session login =
 makeSessionUrl : Session -> List String -> List Url.QueryParameter -> Maybe String -> String
 makeSessionUrl session =
     Flags.makeUrl session.flags
+
+
+makeApiUrl : Session -> List String -> List Url.QueryParameter -> Maybe String -> String
+makeApiUrl session =
+    Flags.makeApiUrl session.flags
 
 
 getUrl : { m | session : Session } -> List String -> List Url.QueryParameter -> Maybe String -> String
