@@ -32,12 +32,14 @@ createTables = useHandle $ \conn ->
 getList :: (MonadReader Handle m, MonadIO m) => UserName -> ListId -> m (Maybe List)
 getList userName lId = useHandle $ \conn ->
   listToMaybe . map toList <$> Sql.queryNamed conn 
-    -- TODO: Anzahl offene aus Todos
-    "SELECT name, user FROM lists WHERE rowid = :id AND user = :user" 
+    "SELECT lists.name, lists.user, COUNT(*) as cnt \
+    \FROM lists, todos \
+    \WHERE lists.rowid = :id AND lists.user = :user AND todos.listId = :id \
+    \GROUP BY lists.name, lists.user" 
     [ ":id" := lId, ":user" := userName ]
   where
-    toList :: (Text, Text) -> List
-    toList (ln, _) = List lId ln 0 
+    toList :: (Text, Text, Int) -> List
+    toList (ln, _, nr) = List lId ln nr
 
 
 listLists :: (MonadReader Handle m, MonadIO m) => UserName -> m [List]
