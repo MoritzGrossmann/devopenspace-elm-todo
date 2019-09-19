@@ -1,5 +1,6 @@
 module Todos exposing
-    ( Id
+    ( Filter(..)
+    , Id
     , Item
     , Todos
     , activeTodos
@@ -23,6 +24,12 @@ module Todos exposing
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
+
+
+type Filter
+    = All
+    | Active
+    | Completed
 
 
 type Todos
