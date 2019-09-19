@@ -15,13 +15,17 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     App
-  other-modules:       Api.RouteApi
+  other-modules:       Api.ListsApi
+                     , Api.RouteApi
                      , Api.TodosApi
                      , Api.UsersApi
                      , Db
                      , Db.Internal
+                     , Db.Lists
                      , Db.Tasks
                      , Db.Users
+                     , Models.ListId
+                     , Models.Lists
                      , Models.Tasks
                      , Models.User
                      , Page
@@ -35,6 +39,7 @@ library
                      , servant-auth
                      , servant-auth-server
                      , servant-blaze
+                     , servant-docs
                      , servant-server
                      , sqlite-simple
                      , stm

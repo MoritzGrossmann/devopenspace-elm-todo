@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns #-}
+{-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns, OverloadedStrings #-}
 module Models.User
   ( Login (..)
   , User (..)
@@ -14,17 +14,18 @@ import           Data.Aeson.TH (deriveJSON, defaultOptions)
 import           Data.ByteString (ByteString)
 import           Data.Text (Text)
 import           Data.Text.Encoding (encodeUtf8)
+import           Servant.Docs (ToSample (..), singleSample)
 
 type UserName = Text
 
-data Login = Login 
+data Login = Login
   { name     :: UserName
   , password :: Text
   } deriving Show
 
 $(deriveJSON defaultOptions ''Login)
 
-data User = User 
+data User = User
   { userName   :: UserName
   , userPwHash :: ByteString
   } deriving Show
@@ -45,3 +46,6 @@ validate User{userPwHash} Login{password} =
 validatePassword :: User -> Text -> Bool
 validatePassword User{userPwHash} pwd =
   BC.validatePassword userPwHash $ encodeUtf8 pwd
+
+instance ToSample Login where
+  toSamples _ = singleSample $ Login "your-username" "top secret pa$$w0rd"
