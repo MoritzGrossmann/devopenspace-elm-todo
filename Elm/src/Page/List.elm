@@ -114,7 +114,7 @@ update msg model =
 
                 updateCmd =
                     newItem
-                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
+                        |> Maybe.map (Api.update model.session ItemReceived)
                         |> Maybe.withDefault Cmd.none
             in
             ( { model | todos = newTodos }, updateCmd )
@@ -122,7 +122,7 @@ update msg model =
         DeleteItem itemId ->
             let
                 deleteCmd =
-                    Api.delete model.session ItemsReceived model.listId itemId
+                    Api.delete model.session ItemsReceived itemId
 
                 newTodos =
                     Todos.deleteItem itemId model.todos
@@ -163,7 +163,7 @@ update msg model =
 
                 updateCmd =
                     updatedItem
-                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
+                        |> Maybe.map (Api.update model.session ItemReceived)
                         |> Maybe.withDefault Cmd.none
             in
             ( { model
@@ -187,7 +187,7 @@ update msg model =
                                         Todos.deleteItem item.id model.todos
 
                                     deleteCmd =
-                                        Api.delete model.session ItemsReceived model.listId item.id
+                                        Api.delete model.session ItemsReceived item.id
                                 in
                                 ( deleteCmd :: cmds, newTodos )
                             )
@@ -210,7 +210,7 @@ update msg model =
 
                                     toggleCmd =
                                         toggledItem
-                                            |> Maybe.map (Api.update model.session ItemReceived model.listId)
+                                            |> Maybe.map (Api.update model.session ItemReceived)
                                             |> Maybe.withDefault Cmd.none
                                 in
                                 ( toggleCmd :: cmds, newTodos )
