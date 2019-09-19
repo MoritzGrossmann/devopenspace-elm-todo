@@ -20,7 +20,7 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Aeson (encode)
 import           Data.Aeson.TH (deriveJSON, defaultOptions)
 import           Data.ByteString.Lazy (ByteString)
-import           Models (Task, TaskId)
+import           Models.Tasks (Task, TaskId)
 import qualified Network.WebSockets.Connection as WS
 
 
@@ -37,9 +37,7 @@ $(deriveJSON defaultOptions ''TaskChange)
   
 
 initialize :: IO Handle
-initialize = do
-  chan      <- STM.newBroadcastTChanIO
-  return $ Handle chan
+initialize = Handle <$> STM.newBroadcastTChanIO
 
 
 broadcast :: MonadIO m => Handle -> TaskChange -> m ()

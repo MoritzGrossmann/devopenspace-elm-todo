@@ -15,10 +15,10 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     App
-  other-modules:       Models
-                     , Db
+  other-modules:       Db
                      , Db.Internal
                      , Db.Tasks
+                     , Models.Tasks
                      , Page
                      , RestApi
                      , RouteApi

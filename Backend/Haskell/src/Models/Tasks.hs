@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Models
+module Models.Tasks
   ( TaskId
   , Task (..)
   ) where

@@ -18,7 +18,7 @@ import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
 import           Db.Internal
-import           Models
+import           Models.Tasks
 
 
 createTables :: (MonadReader Handle m, MonadIO m) => m ()
