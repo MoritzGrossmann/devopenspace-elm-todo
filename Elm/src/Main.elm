@@ -7,7 +7,7 @@ import Page
 import Page.List as ListPage
 import Page.Login as LoginPage
 import Routes exposing (Route)
-import Session exposing (Session, getNavKey)
+import Session exposing (Login(..), Session, getNavKey)
 import Url exposing (Url)
 
 
@@ -101,7 +101,7 @@ update msg model =
                         Just route ->
                             let
                                 ( page, cmd ) =
-                                    initPage (withSession (\s -> s) model) route
+                                    initPage (withSession identity model) route
                             in
                             ( page, cmd )
 
@@ -109,16 +109,21 @@ update msg model =
                     ( model, Nav.load url )
 
         UrlChanged url ->
-            let
-                route =
-                    Routes.locationToRoute (getFlags model).baseUrlPath url
-            in
-            case route of
-                Just r ->
-                    initPage (withSession identity model) r
+            case (withSession identity model).login of
+                NotLoggedIn ->
+                    initPage (withSession identity model) Routes.Login
 
-                Nothing ->
-                    initPage (withSession identity model) Routes.Lists
+                LoggedIn _ ->
+                    let
+                        route =
+                            Routes.locationToRoute (getFlags model).baseUrlPath url
+                    in
+                    case route of
+                        Just r ->
+                            initPage (withSession identity model) r
+
+                        Nothing ->
+                            initPage (withSession identity model) Routes.Lists
 
         ListMsg pageMsg ->
             updateList pageMsg model
