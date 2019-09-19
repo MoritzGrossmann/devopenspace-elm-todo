@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE RankNTypes        #-}
@@ -22,6 +25,7 @@ import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
+import           Servant.Docs
 
 
 type ListsApi =
@@ -34,6 +38,8 @@ type ListsApi =
     :<|> Capture "id" Db.ListId :> Get '[JSON] Db.List
   )
 
+instance ToCapture (Capture "id" Db.ListId) where
+  toCapture _ = DocCapture "id" "ID der Liste die benutzt werden soll"
 
 server :: Db.Handle -> Server ListsApi
 server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHandlers

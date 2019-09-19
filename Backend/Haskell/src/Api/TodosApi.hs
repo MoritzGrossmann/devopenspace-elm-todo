@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 
 module Api.TodosApi
@@ -20,13 +21,14 @@ import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
 import           Data.Text (Text)
 import qualified Db
-import qualified Db.Tasks as Db
 import qualified Db.Lists as DbL
+import qualified Db.Tasks as Db
 import           Models.ListId
 import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
+import           Servant.Docs
 
 
 type TodosApi =
@@ -39,6 +41,12 @@ type TodosApi =
     :<|> Capture "id" Db.TaskId :> Delete '[JSON] [Db.Task]
     :<|> Capture "id" Db.TaskId :> Get '[JSON] Db.Task
   )
+
+instance ToCapture (Capture "id" Db.TaskId) where
+  toCapture _ = DocCapture "id" "ID des Tasks der benutzt werden soll"
+
+instance ToCapture (Capture "listId" ListId) where
+  toCapture _ = DocCapture "id" "ID der Liste die benutzt werden soll"
 
 
 server :: Db.Handle -> Server TodosApi

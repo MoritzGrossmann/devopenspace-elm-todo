@@ -39,6 +39,7 @@ library
                      , servant-auth
                      , servant-auth-server
                      , servant-blaze
+                     , servant-docs
                      , servant-server
                      , sqlite-simple
                      , stm
