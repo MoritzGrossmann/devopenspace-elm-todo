@@ -14,6 +14,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
 import           Data.Text (Text)
 import qualified Db
+import qualified Db.Tasks as Db
 import           Servant
 import           Servant.API.WebSocket (WebSocket)
 import qualified Ws

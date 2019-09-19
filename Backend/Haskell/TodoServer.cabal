@@ -17,12 +17,15 @@ library
   exposed-modules:     App
   other-modules:       Models
                      , Db
+                     , Db.Internal
+                     , Db.Tasks
                      , Page
                      , RestApi
                      , RouteApi
                      , Ws
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , bcrypt
                      , blaze-html
                      , blaze-markup
                      , bytestring
