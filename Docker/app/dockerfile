@@ -28,7 +28,7 @@ EXPOSE 8080
 
 RUN apt-get update && apt-get install -y libgmp-dev && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /app
+RUN mkdir -p /app && mkdir -p /data
 WORKDIR /app
 COPY --from=haskellBuilder /app/dist /app
 
@@ -36,9 +36,7 @@ RUN mkdir -p static
 COPY --from=haskellBuilder /app/static ./static
 COPY --from=elmBuilder /app/dist/todo.js ./static/
 
-RUN useradd app
-RUN chown -hR app /app
+RUN useradd app && chown -hR app /app && chown -hR app /data
 USER app
 
-ENTRYPOINT [ ]
-CMD ["/app/TodoServer-exe"]
+ENTRYPOINT ["/app/TodoServer-exe", "/data/settings.yaml"]

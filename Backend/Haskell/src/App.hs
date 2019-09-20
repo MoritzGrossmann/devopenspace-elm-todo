@@ -35,7 +35,7 @@ startApp :: FilePath -> IO ()
 startApp settingsPath = do
   Settings{..} <- loadSettings settingsPath
 
-  writeDocs "docs.md"
+  -- writeDocs "docs.md"
   putStrLn $ "initializing Database in " ++ databasePath
   dbHandle <- Db.initDb databasePath
 

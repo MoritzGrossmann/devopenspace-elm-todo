@@ -16,7 +16,7 @@ deploy:
 	cp ./Backend/Haskell/dist/* ./dist/ -r
 
 .PHONY: clean
-clean: 
+clean:
 	$(MAKE) -C Elm clean
 	$(MAKE) -C Backend/Haskell clean
 	rm -rf ./dist
@@ -27,4 +27,4 @@ docker-build:
 
 .PHONY: docker-run
 docker-run: docker-build
-	docker run -ti --rm -p8080:8080 todo-server
+	docker run -ti --rm -p 8080:8080 -v $(shell pwd)/data:/data todo-server
