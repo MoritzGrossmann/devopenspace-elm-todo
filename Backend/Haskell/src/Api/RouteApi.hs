@@ -5,7 +5,8 @@
 
 
 module Api.RouteApi
-    ( RouteApi
+    ( Config (..)
+    , RouteApi
     , server
     ) where
 
@@ -13,6 +14,7 @@ module Api.RouteApi
 import           Data.Aeson ()
 import           Data.Aeson.TH ()
 import           Data.Text (Text)
+import           Page (Config(..))
 import qualified Page
 import           Servant
 import           Servant.HTML.Blaze (HTML)
@@ -25,11 +27,11 @@ type RouteApi =
 
 
 
-server :: Server RouteApi
-server = staticHandler :<|> pageHandler
+server :: Config -> Server RouteApi
+server config = staticHandler :<|> pageHandler
   where
     pageHandler _ =
-      return Page.index
+      return $ Page.index config
 
     staticHandler =
       Servant.serveDirectoryWebApp "./static"
