@@ -110,7 +110,7 @@ authHeader : Session -> List Http.Header
 authHeader session =
     case session.login of
         LoggedIn token ->
-            [ Http.header "Authentication" (String.interpolate "Bearer {0}" [ token ])
+            [ Http.header "Authorization" (String.interpolate "Bearer {0}" [ token ])
             ]
 
         NotLoggedIn ->
