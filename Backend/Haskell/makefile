@@ -9,3 +9,8 @@ run: build
 .PHONY: clean
 clean: 
 	rm -rf .stack-work
+	rm -rf ./dist
+
+deploy: build
+	mkdir -p ./dist
+	cp $(shell stack path --local-install-root)/bin/. ./dist/ -a
