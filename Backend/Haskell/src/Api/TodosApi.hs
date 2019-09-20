@@ -13,8 +13,7 @@ module Api.TodosApi
     ) where
 
 
-import           Api.UsersApi (AuthenticatedUser)
-import qualified Api.UsersApi as UsersApi
+import           Authentication (AuthenticatedUser(..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
 import qualified Data.ByteString.Lazy as BS
@@ -53,10 +52,10 @@ instance ToCapture (Capture "listId" ListId) where
 
 
 server :: Db.Handle -> Server TodosApi
-server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers
+server dbHandle = hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers
   where
     todoHandlers (SAS.Authenticated user) = withListId userName :<|> withoutListId userName
-      where userName = UsersApi.auName user
+      where userName = auName user
     todoHandlers _ = SAS.throwAll err401
     withListId userName listId =
       getAllHandler userName listId
