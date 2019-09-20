@@ -19,24 +19,25 @@ WORKDIR /app
 COPY ./Backend/Haskell/stack.yaml ./Backend/Haskell/TodoServer.cabal ./
 RUN stack setup && stack install --dependencies-only
 
-COPY ./BackEnd/Haskell .
+COPY ./Backend/Haskell .
 RUN make deploy
 
 
-FROM fpco/stack-run:lts-14.6
+FROM ubuntu:18.04  
 EXPOSE 8080
 
-ENV LANG en_US.UTF-8
+RUN apt-get update && apt-get install -y libgmp-dev && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /app
 WORKDIR /app
-COPY --from=haskellBuilder /dist /app
+COPY --from=haskellBuilder /app/dist /app
 
 RUN mkdir -p static
-COPY --from=haskellBuilder /app/static .
+COPY --from=haskellBuilder /app/static ./static
 COPY --from=elmBuilder /app/dist/todo.js ./static/
 
 RUN useradd app
+RUN chown -hR app /app
 USER app
 
 ENTRYPOINT [ ]
