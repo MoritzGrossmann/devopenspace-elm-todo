@@ -6,7 +6,7 @@ build: elm
 elm:
 	$(MAKE) -C Elm build
 
-.PHONY: deploy	
+.PHONY: deploy
 deploy:
 	$(shell mkdir -p ./dist)
 	$(shell mkdir -p ./dist/static)
@@ -23,16 +23,8 @@ clean:
 
 .PHONY: docker-build
 docker-build:
-	docker-compose -f ./Docker/docker-compose.yml --project-directory . -p todo build --force-rm
+	docker build -t todo-server -f ./Docker/app/dockerfile .
 
 .PHONY: docker-run
-docker-run:
-	docker-compose -f ./Docker/docker-compose.yml --project-directory . -p todo up
-
-.PHONY: docker-install
-docker-install:
-	docker-compose -f ./Docker/docker-compose.yml --project-directory . -p todo up -d
-
-.PHONY: docker-clean
-docker-clean:
-	docker-compose -f ./Docker/docker-compose.yml --project-directory . -p todo rm -s -f -v
+docker-run: docker-build
+	docker run -ti --rm -p8080:8080 todo-server

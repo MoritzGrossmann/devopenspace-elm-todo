@@ -5,7 +5,7 @@ RUN mkdir -p $BUILD/dist
 WORKDIR $BUILD
 COPY ./Elm/src ./src
 COPY ./Elm/elm.json .
-RUN elm make ./src/Main.elm --output ./dist/todo.js
+RUN elm make --optimize ./src/Main.elm --output ./dist/todo.js
 
 FROM fpco/stack-build:lts-14.6 as haskellBuilder
 
