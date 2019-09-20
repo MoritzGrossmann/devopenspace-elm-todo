@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 
 module App
@@ -10,6 +11,7 @@ module App
     , writeDocs
     ) where
 
+import qualified Authentication as Auth
 import           Api.ListsApi (ListsApi)
 import qualified Api.ListsApi as ListsApi
 import           Api.RouteApi (RouteApi)
@@ -27,34 +29,23 @@ import           Servant
 import qualified Servant.Auth.Server as SAS
 import           Servant.Docs (ToSample(..), singleSample)
 import qualified Servant.Docs as Docs
+import           Settings (Settings(..), loadSettings)
 
-getPort :: IO Int
-getPort = return 8080
+startApp :: FilePath -> IO ()
+startApp settingsPath = do
+  Settings{..} <- loadSettings settingsPath
 
-
-getDbPath :: IO FilePath
-getDbPath = return "./todos.db"
-
-
-startApp :: IO ()
-startApp = do
   writeDocs "docs.md"
-  dbPath <- getDbPath
-  putStrLn $ "initializing Database in " ++ dbPath
-  dbHandle <- Db.initDb dbPath
+  putStrLn $ "initializing Database in " ++ databasePath
+  dbHandle <- Db.initDb databasePath
 
-  port <- getPort
-  putStrLn $ "starting Server on " ++ show port
-
-  myKey <- SAS.generateKey
-  let jwtSettings = SAS.defaultJWTSettings myKey
-
-  run port $ app dbHandle jwtSettings
+  putStrLn $ "starting Server on " ++ show serverPort
+  run serverPort $ app dbHandle (Auth.toSettings authConfig)
 
 
 app :: Db.Handle -> SAS.JWTSettings -> Application
 app dbHandle jwtSettings = myCors $ do
-  let authCfg = UsersApi.authCheck dbHandle
+  let authCfg = Auth.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
   Servant.serveWithContext (Proxy :: Proxy (UsersApi :<|> ListsApi :<|> TodosApi :<|> RouteApi)) cfg $
     UsersApi.server dbHandle jwtSettings

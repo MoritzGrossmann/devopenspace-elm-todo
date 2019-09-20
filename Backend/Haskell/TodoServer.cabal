@@ -19,6 +19,7 @@ library
                      , Api.RouteApi
                      , Api.TodosApi
                      , Api.UsersApi
+                     , Authentication
                      , Db
                      , Db.Internal
                      , Db.Lists
@@ -29,12 +30,14 @@ library
                      , Models.Tasks
                      , Models.User
                      , Page
+                     , Settings
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bcrypt
                      , blaze-html
                      , blaze-markup
                      , bytestring
+                     , jose
                      , mtl
                      , servant-auth
                      , servant-auth-server
@@ -47,8 +50,10 @@ library
                      , wai
                      , wai-cors
                      , warp
+                     , yaml
   default-language:    Haskell2010
   ghc-options:       -Wall
+                     -fno-warn-orphans
 
 executable TodoServer-exe
   hs-source-dirs:      app

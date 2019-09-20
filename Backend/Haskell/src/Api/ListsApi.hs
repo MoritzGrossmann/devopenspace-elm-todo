@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE RankNTypes        #-}
@@ -14,8 +13,7 @@ module Api.ListsApi
     ) where
 
 
-import           Api.UsersApi (AuthenticatedUser)
-import qualified Api.UsersApi as UsersApi
+import           Authentication (AuthenticatedUser (..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
 import           Data.Text (Text)
@@ -42,7 +40,7 @@ instance ToCapture (Capture "id" Db.ListId) where
   toCapture _ = DocCapture "id" "ID der Liste die benutzt werden soll"
 
 server :: Db.Handle -> Server ListsApi
-server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHandlers
+server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHandlers
   where
     listsHandlers (SAS.Authenticated user) =
       getAllHandler userName
@@ -50,7 +48,7 @@ server dbHandle = UsersApi.hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandl
       :<|> newHandler userName
       :<|> deleteHandler userName
       :<|> queryHandler userName
-      where userName = UsersApi.auName user
+      where userName = auName user
     listsHandlers _ = SAS.throwAll err401
 
     getAllHandler =
