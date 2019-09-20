@@ -13,9 +13,6 @@ post session toMsg username password =
         { method = "GET"
         , headers =
             [ basicAuthHeader username password
-            , Http.header "Content-Type" "application/json"
-            , Http.header "Access-Control-Request-Method" "GET"
-            , Http.header "Origin" "127.0.0.1"
             ]
         , url = Session.makeApiUrl session [ "user", "login" ] [] Nothing
         , body = Http.emptyBody
