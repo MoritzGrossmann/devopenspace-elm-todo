@@ -36,7 +36,7 @@ getTask :: (MonadReader Handle m, MonadIO m) => UserName -> TaskId -> m (Maybe T
 getTask userName tId = useHandle $ \conn ->
   listToMaybe . map toTask <$> Sql.queryNamed conn 
     "SELECT listId,task,finished FROM todos WHERE rowid = :id AND user = :user" 
-    [ ":id" := tId, ":name" := userName ]
+    [ ":id" := tId, ":user" := userName ]
   where
     toTask (lId,txt,fin) = Task tId (ListId lId) txt fin
 

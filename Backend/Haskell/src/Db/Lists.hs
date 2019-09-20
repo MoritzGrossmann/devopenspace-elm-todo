@@ -40,7 +40,7 @@ listExists userName lId = useHandle $ \conn -> do
 getList :: (MonadReader Handle m, MonadIO m) => UserName -> ListId -> m (Maybe List)
 getList userName lId = useHandle $ \conn ->
   listToMaybe . map toList <$> Sql.queryNamed conn
-    "SELECT lists.name, lists.user, (SELECT COUNT(*) FROM todos WHERE todos.listId = :id) as cnt \
+    "SELECT lists.name, lists.user, (SELECT COUNT(*) FROM todos WHERE todos.listId = :id AND todos.finished = 0) as cnt \
     \FROM lists \
     \WHERE lists.rowid = :id AND lists.user = :user"
     [ ":id" := lId, ":user" := userName ]
@@ -52,7 +52,7 @@ getList userName lId = useHandle $ \conn ->
 listLists :: (MonadReader Handle m, MonadIO m) => UserName -> m [List]
 listLists userName = useHandle $ \conn ->
   map toList <$> Sql.queryNamed conn
-    "SELECT lists.rowid, lists.name, (SELECT COUNT(*) FROM todos WHERE todos.listId = lists.rowid) as cnt \
+    "SELECT lists.rowid, lists.name, (SELECT COUNT(*) FROM todos WHERE todos.listId = lists.rowid AND todos.finished = 0) as cnt \
     \FROM lists \
     \WHERE lists.user=:user"
     [ ":user" := userName ]
