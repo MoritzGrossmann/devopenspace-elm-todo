@@ -28,7 +28,7 @@ routeToUrlString baseUrl targetRoute =
                 fragment =
                     case filter of
                         All ->
-                            Nothing
+                            Just "all"
 
                         Active ->
                             Just "active"
@@ -69,7 +69,7 @@ route baseUrl =
                 |> Maybe.withDefault All
     in
     UrlP.oneOf
-        [ UrlP.map Login (basePart </> UrlP.s "login")
+        [ UrlP.map List (basePart </> UrlP.s "lists" </> UrlP.int </> UrlP.fragment filterParser)
+        , UrlP.map Login (basePart </> UrlP.s "login")
         , UrlP.map Lists (basePart </> UrlP.s "lists")
-        , UrlP.map List (basePart </> UrlP.s "lists" </> UrlP.int </> UrlP.fragment filterParser)
         ]

@@ -26,4 +26,4 @@ decodeMetaData =
     Json.map3 MetaData
         (Json.field "name" Json.string)
         (Json.field "id" Json.int)
-        (Json.field "active" Json.int)
+        (Json.field "nrActive" Json.int)

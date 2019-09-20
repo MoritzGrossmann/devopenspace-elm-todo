@@ -2,7 +2,7 @@ module Api.Session exposing (post)
 
 import Base64
 import Http
-import Json.Encode as Enc
+import Json.Decode as Json
 import Session exposing (Session)
 import String.Interpolate as String
 
@@ -16,7 +16,7 @@ post session toMsg username password =
             ]
         , url = Session.makeApiUrl session [ "user", "login" ] [] Nothing
         , body = Http.emptyBody
-        , expect = Http.expectString toMsg
+        , expect = Http.expectJson toMsg Json.string
         , timeout = Nothing
         , tracker = Nothing
         }

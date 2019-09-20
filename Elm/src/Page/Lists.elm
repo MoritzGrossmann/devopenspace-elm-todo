@@ -2,6 +2,7 @@ module Page.Lists exposing (Model, Msg(..), Page, init, update, view)
 
 import Api.Lists
 import Components.Todos exposing (Filter(..))
+import Dict exposing (Dict)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
@@ -19,7 +20,7 @@ type alias Page msg =
 
 type alias Model =
     { session : Session
-    , lists : WebData (List TodoList.MetaData)
+    , lists : WebData (Dict TodoList.Id TodoList.MetaData)
     , neueListe : String
     }
 
@@ -43,13 +44,15 @@ type Msg
     | UpdateNeueListe String
     | SubmitNeueListe
     | NeueListeResult (Result Http.Error TodoList.MetaData)
+    | DeleteList TodoList.Id
+    | DeleteListResult TodoList.Id (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ListResult (Ok lists) ->
-            ( { model | lists = RemoteData.Success lists }, Cmd.none )
+            ( { model | lists = RemoteData.Success (lists |> listToDict) }, Cmd.none )
 
         ListResult (Err httpError) ->
             case httpError of
@@ -68,12 +71,21 @@ update msg model =
         NeueListeResult (Ok liste) ->
             ( { model
                 | neueListe = ""
-                , lists = model.lists |> RemoteData.map (\l -> RemoteData.Success (liste :: l)) |> RemoteData.withDefault model.lists
+                , lists = model.lists |> RemoteData.map (\l -> RemoteData.Success (l |> Dict.insert liste.id liste)) |> RemoteData.withDefault model.lists
               }
             , Cmd.none
             )
 
         NeueListeResult (Err httpError) ->
+            ( model, Cmd.none )
+
+        DeleteList id ->
+            ( model, Api.Lists.delete model.session (DeleteListResult id) id )
+
+        DeleteListResult id (Ok _) ->
+            ( { model | lists = model.lists |> RemoteData.map (\l -> l |> Dict.remove id) }, Cmd.none )
+
+        DeleteListResult _ (Err _) ->
             ( model, Cmd.none )
 
 
@@ -85,7 +97,7 @@ view model =
         , H.form [ Ev.onSubmit SubmitNeueListe ]
             [ H.input
                 [ Attr.class "new-todo"
-                , Attr.placeholder "what needs to be done?"
+                , Attr.placeholder "create a List"
                 , Attr.autofocus True
                 , Attr.value model.neueListe
                 , Ev.onInput UpdateNeueListe
@@ -94,10 +106,10 @@ view model =
             , H.button [ Attr.style "display" "none", Attr.type_ "submit" ] []
             ]
         , H.ul
-            []
+            [ Attr.class "todo-list" ]
             (model.lists
                 |> RemoteData.map
-                    (\list -> list |> List.map (viewListItem model.session))
+                    (\dict -> dict |> Dict.toList |> List.map (\( i, m ) -> viewListItem model.session m))
                 |> RemoteData.withDefault []
             )
         ]
@@ -106,13 +118,26 @@ view model =
 viewListItem : Session -> TodoList.MetaData -> Html Msg
 viewListItem session listItem =
     H.li [ Attr.class "todo" ]
-        [ H.a
-            [ Attr.href (Routes.routeToUrlString session.flags.baseUrlPath (Routes.List listItem.id All))
-            , Attr.class "view"
+        [ H.div
+            [ Attr.class "view"
             ]
-            [ H.label [] [ H.text listItem.name ]
-            , H.div
-                []
+            [ H.div
+                [ Attr.class "open-count" ]
                 [ H.text (listItem.active |> String.fromInt) ]
+            , H.a [ Attr.href (Routes.routeToUrlString session.flags.baseUrlPath (Routes.List listItem.id All)) ]
+                [ H.label [] [ H.text listItem.name ]
+                ]
+            , H.button
+                [ Attr.class "destroy"
+                , Ev.onClick (DeleteList listItem.id)
+                ]
+                []
             ]
         ]
+
+
+listToDict : List TodoList.MetaData -> Dict TodoList.Id TodoList.MetaData
+listToDict list =
+    list
+        |> List.map (\i -> ( i.id, i ))
+        |> Dict.fromList

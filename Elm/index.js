@@ -1,3 +1,3 @@
 import { Elm } from './src/Main.elm'
 // TODO: change to public API Url later
-Elm.Main.init({ flags: { baseUrlPath: "http://localhost:1234", apiUrl: "http://localhost:8080" } });
+Elm.Main.init({ flags: { baseUrlPath: "", apiUrl: "http://localhost:8080" } });

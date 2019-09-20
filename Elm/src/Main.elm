@@ -102,11 +102,7 @@ update msg model =
                             ( model, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) )
 
                         Just route ->
-                            let
-                                ( page, cmd ) =
-                                    initPage (withSession identity model) route
-                            in
-                            ( page, cmd )
+                            ( model, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath route) )
 
                 Browser.External url ->
                     ( model, Nav.load url )

@@ -4,6 +4,7 @@ import Api.Lists
 import Api.Todos as Api
 import Browser.Dom as Dom
 import Components.Todos as Todos exposing (Filter(..), Todos)
+import Dict
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
@@ -12,6 +13,7 @@ import Json.Decode as Json
 import Models.List as TodoList
 import Page
 import RemoteData exposing (WebData)
+import Routes
 import Session exposing (Session)
 import Task
 
@@ -70,9 +72,9 @@ init wrap session filter listId =
     Page.init wrap pageInit view update (always Sub.none) session
 
 
-itemCount : Model -> Int
-itemCount model =
-    List.length (filtered model.activeFilter model.todos)
+activeCount : Todos -> Int
+activeCount todos =
+    List.length (todos |> Todos.activeTodos)
 
 
 filtered : Filter -> Todos -> List Todos.Item
@@ -114,7 +116,7 @@ update msg model =
 
                 updateCmd =
                     newItem
-                        |> Maybe.map (Api.update model.session ItemReceived)
+                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
                         |> Maybe.withDefault Cmd.none
             in
             ( { model | todos = newTodos }, updateCmd )
@@ -163,7 +165,7 @@ update msg model =
 
                 updateCmd =
                     updatedItem
-                        |> Maybe.map (Api.update model.session ItemReceived)
+                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
                         |> Maybe.withDefault Cmd.none
             in
             ( { model
@@ -210,7 +212,7 @@ update msg model =
 
                                     toggleCmd =
                                         toggledItem
-                                            |> Maybe.map (Api.update model.session ItemReceived)
+                                            |> Maybe.map (Api.update model.session ItemReceived model.listId)
                                             |> Maybe.withDefault Cmd.none
                                 in
                                 ( toggleCmd :: cmds, newTodos )
@@ -237,7 +239,12 @@ update msg model =
             ( { model | listMetaData = RemoteData.Success metaData }, Cmd.none )
 
         ListMetaDataReceived (Err httpError) ->
-            ( { model | listMetaData = RemoteData.Failure httpError }, Cmd.none )
+            case httpError of
+                Http.BadStatus 401 ->
+                    ( model, Session.navigateTo model Routes.Login )
+
+                _ ->
+                    ( { model | listMetaData = RemoteData.Failure httpError }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -259,7 +266,7 @@ viewHeader : Model -> Html Msg
 viewHeader model =
     H.header
         [ Attr.class "header" ]
-        [ H.h1 [] [ H.text "todos" ]
+        [ H.h1 [] [ H.text (model.listMetaData |> RemoteData.map .name |> RemoteData.withDefault "") ]
         , H.input
             [ Attr.class "new-todo"
             , Attr.placeholder "what needs to be done?"
@@ -358,28 +365,28 @@ viewFooter model =
         H.footer
             [ Attr.class "footer" ]
             [ H.span [ Attr.class "todo-count" ]
-                [ H.strong [] [ H.text (String.fromInt (itemCount model)) ]
+                [ H.strong [] [ H.text (String.fromInt (model.todos |> activeCount)) ]
                 , H.text " item left"
                 ]
             , H.ul [ Attr.class "filters" ]
                 [ H.li []
                     [ H.a
                         [ Attr.classList [ ( "selected", model.activeFilter == All ) ]
-                        , Attr.href ""
+                        , Attr.href (Routes.routeToUrlString model.session.flags.baseUrlPath (Routes.List model.listId All))
                         ]
                         [ H.text "All" ]
                     ]
                 , H.li []
                     [ H.a
                         [ Attr.classList [ ( "selected", model.activeFilter == Active ) ]
-                        , Attr.href ""
+                        , Attr.href (Routes.routeToUrlString model.session.flags.baseUrlPath (Routes.List model.listId Active))
                         ]
                         [ H.text "Active" ]
                     ]
                 , H.li []
                     [ H.a
                         [ Attr.classList [ ( "selected", model.activeFilter == Completed ) ]
-                        , Attr.href ""
+                        , Attr.href (Routes.routeToUrlString model.session.flags.baseUrlPath (Routes.List model.listId Completed))
                         ]
                         [ H.text "Completed" ]
                     ]

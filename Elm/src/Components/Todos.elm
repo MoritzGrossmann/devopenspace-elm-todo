@@ -2,7 +2,7 @@ module Components.Todos exposing
     ( Filter(..)
     , Id
     , Item
-    , Todos
+    , Todos(..)
     , activeTodos
     , allCompleted
     , allTodos
@@ -54,12 +54,13 @@ itemDecoder =
         (Decode.field "finished" Decode.bool)
 
 
-encodeItem : Item -> Value
-encodeItem item =
+encodeItem : Item -> Int -> Value
+encodeItem item listId =
     Encode.object
         [ ( "id", encodeId item.id )
         , ( "text", Encode.string item.text )
         , ( "finished", Encode.bool item.completed )
+        , ( "listId", Encode.int listId )
         ]
 
 
