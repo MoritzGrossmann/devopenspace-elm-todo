@@ -1,0 +1,42 @@
+FROM codesimple/elm:0.19 as elmBuilder
+ENV BUILD=/app
+RUN mkdir -p $BUILD
+RUN mkdir -p $BUILD/dist
+WORKDIR $BUILD
+COPY ./Elm/src ./src
+COPY ./Elm/elm.json .
+RUN elm make --optimize ./src/Main.elm --output ./dist/todo.js
+
+FROM fpco/stack-build:lts-14.6 as haskellBuilder
+
+ENV LANG en_US.UTF-8
+ENV PATH /root/.local/bin:$PATH
+
+RUN mkdir -p /app
+RUN mkdir -p /app/dist
+WORKDIR /app
+
+COPY ./Backend/Haskell/stack.yaml ./Backend/Haskell/TodoServer.cabal ./
+RUN stack setup && stack install --dependencies-only
+
+COPY ./Backend/Haskell .
+RUN make deploy
+
+
+FROM ubuntu:18.04  
+EXPOSE 8080
+
+RUN apt-get update && apt-get install -y libgmp-dev && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /app && mkdir -p /data
+WORKDIR /app
+COPY --from=haskellBuilder /app/dist /app
+
+RUN mkdir -p static
+COPY --from=haskellBuilder /app/static ./static
+COPY --from=elmBuilder /app/dist/todo.js ./static/
+
+RUN useradd app && chown -hR app /app && chown -hR app /data
+USER app
+
+ENTRYPOINT ["/app/TodoServer-exe", "/data/settings.yaml"]

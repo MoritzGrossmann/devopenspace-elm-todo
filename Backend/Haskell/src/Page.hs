@@ -33,8 +33,7 @@ scripts :: H.Html
 scripts = do
   traverse_ (\ref -> H.script "" ! A.src ref) jsSrcs
   H.script $ H.toHtml $ unlines
-    [ "Elm.Main.init({ flags: { baseUrl: '/' } });" ]
-
+    [ "Elm.Main.init({ flags: { baseUrlPath: '', apiUrl: '/api' } });" ]
   where
     jsSrcs =
       [ "static/todo.js" ]

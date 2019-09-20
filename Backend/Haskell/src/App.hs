@@ -35,7 +35,7 @@ startApp :: FilePath -> IO ()
 startApp settingsPath = do
   Settings{..} <- loadSettings settingsPath
 
-  writeDocs "docs.md"
+  -- writeDocs "docs.md"
   putStrLn $ "initializing Database in " ++ databasePath
   dbHandle <- Db.initDb databasePath
 
@@ -43,14 +43,18 @@ startApp settingsPath = do
   run serverPort $ app dbHandle (Auth.toSettings authConfig)
 
 
+-- prefix APIs with "api/"
+type ApiProxy = "api" :> (UsersApi :<|> ListsApi :<|> TodosApi)
+type WebProxy = RouteApi
+
 app :: Db.Handle -> SAS.JWTSettings -> Application
 app dbHandle jwtSettings = myCors $ do
   let authCfg = Auth.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
-  Servant.serveWithContext (Proxy :: Proxy (UsersApi :<|> ListsApi :<|> TodosApi :<|> RouteApi)) cfg $
-    UsersApi.server dbHandle jwtSettings
+  Servant.serveWithContext (Proxy :: Proxy (ApiProxy :<|> WebProxy)) cfg $
+    (UsersApi.server dbHandle jwtSettings
     :<|> ListsApi.server dbHandle
-    :<|> TodosApi.server dbHandle
+    :<|> TodosApi.server dbHandle)
     :<|> RouteApi.server
   where
     myCors = cors $ const $ Just myPolicy

@@ -1,6 +1,6 @@
 import { Elm } from './src/Main.elm'
 // TODO: change to public API Url later
-var app = Elm.Main.init({ flags: { baseUrlPath: "", apiUrl: "http://localhost:8080" } });
+var app = Elm.Main.init({ flags: { baseUrlPath: "", apiUrl: "http://localhost:8080/api" } });
 
 app.ports.store.subscribe(function(data) {
     let storageKey = data[0];
