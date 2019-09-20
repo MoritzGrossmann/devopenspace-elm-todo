@@ -55,7 +55,7 @@ app dbHandle jwtSettings = myCors $ do
   where
     myCors = cors $ const $ Just myPolicy
     myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods
-                                        , corsRequestHeaders = ["Content-Type"] }
+                                        , corsRequestHeaders = ["Content-Type", "authorization"] }
     myMethods = simpleMethods ++ ["PUT", "DELETE", "OPTIONS", "GET"]
 
 writeDocs :: FilePath -> IO ()
