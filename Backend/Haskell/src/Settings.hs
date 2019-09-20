@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 
 module Settings
@@ -7,15 +8,19 @@ module Settings
     , defaultSettings
     , loadSettings
     , saveSettings
+    , toPageConfig
     ) where
 
 import qualified Authentication as Auth
 import           Data.Aeson.TH (deriveJSON, defaultOptions)
 import           Data.Yaml (encodeFile, decodeFileEither)
+import qualified Page as Page
 
 data Settings = Settings
   { serverPort   :: Int
   , databasePath :: FilePath
+  , siteBaseUrl  :: String
+  , apiBaseUrl   :: String
   , authConfig   :: Auth.Config
   }
 
@@ -23,7 +28,7 @@ $(deriveJSON defaultOptions ''Settings)
 
 defaultSettings :: IO Settings
 defaultSettings =
-  Settings 8080 "./todos.db" <$> Auth.newConfig
+  Settings 8080 "./todos.db" "/" "/api" <$> Auth.newConfig
 
 loadSettings :: FilePath -> IO Settings
 loadSettings settingsPath = do
@@ -43,3 +48,7 @@ loadSettings settingsPath = do
 saveSettings :: Settings -> FilePath -> IO ()
 saveSettings settings settingsPath =
   encodeFile settingsPath settings
+
+toPageConfig :: Settings -> Page.Config
+toPageConfig Settings{..} =
+  Page.Config siteBaseUrl apiBaseUrl
