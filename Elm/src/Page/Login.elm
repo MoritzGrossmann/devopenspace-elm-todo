@@ -16,6 +16,8 @@ import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
+import Json.Encode as Enc
+import LocalStorage
 import Page
 import RemoteData exposing (RemoteData, WebData)
 import Routes exposing (Route)
@@ -79,7 +81,10 @@ update msg model =
                         | token = RemoteData.Success token
                         , session = Session.updateLogin model.session (LoggedIn token)
                       }
-                    , Session.navigateTo model (model.transitionTo |> Maybe.withDefault Routes.Lists)
+                    , Cmd.batch
+                        [ Session.navigateTo model (model.transitionTo |> Maybe.withDefault Routes.Lists)
+                        , LocalStorage.store ( LocalStorage.authorizationKey, Just (token |> Enc.string) )
+                        ]
                     )
 
                 Err error ->

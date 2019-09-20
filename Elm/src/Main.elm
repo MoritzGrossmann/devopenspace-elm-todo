@@ -3,10 +3,12 @@ module Main exposing (main)
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
+import LocalStorage
 import Page
 import Page.List as ListPage
 import Page.Lists as ListsPage
 import Page.Login as LoginPage
+import Page.LoginPending as LoginPending
 import Routes exposing (Route)
 import Session exposing (Login(..), Session, getNavKey)
 import Url exposing (Url)
@@ -18,7 +20,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         , onUrlRequest = UrlRequested
         , onUrlChange = UrlChanged
         }
@@ -52,6 +54,7 @@ type Model
     = Login (LoginPage.Page Msg)
     | List (ListPage.Page Msg)
     | Lists (ListsPage.Page Msg)
+    | LoginPending (LoginPending.Page Msg)
 
 
 type Msg
@@ -61,31 +64,40 @@ type Msg
     | ListMsg (Page.PageMsg ListPage.Msg)
     | LoginMsg (Page.PageMsg LoginPage.Msg)
     | ListsMsg (Page.PageMsg ListsPage.Msg)
+    | LoginPendingMsg (Page.PageMsg LoginPending.Msg)
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
 initPage session route =
-    case route of
-        Routes.Login ->
-            let
-                ( pageModel, pageCmd ) =
-                    LoginPage.init LoginMsg session Nothing
-            in
-            ( Login pageModel, pageCmd )
+    if session.login == NotLoggedIn && route /= Routes.Login then
+        let
+            ( pageModel, pageCmd ) =
+                LoginPending.init LoginPendingMsg session (Just route)
+        in
+        ( LoginPending pageModel, pageCmd )
 
-        Routes.List listId filter ->
-            let
-                ( pageModel, pageCmd ) =
-                    ListPage.init ListMsg session filter listId
-            in
-            ( List pageModel, pageCmd )
+    else
+        case route of
+            Routes.Login ->
+                let
+                    ( pageModel, pageCmd ) =
+                        LoginPage.init LoginMsg session Nothing
+                in
+                ( Login pageModel, pageCmd )
 
-        Routes.Lists ->
-            let
-                ( pageModel, pageCmd ) =
-                    ListsPage.init ListsMsg session
-            in
-            ( Lists pageModel, pageCmd )
+            Routes.List listId filter ->
+                let
+                    ( pageModel, pageCmd ) =
+                        ListPage.init ListMsg session filter listId
+                in
+                ( List pageModel, pageCmd )
+
+            Routes.Lists ->
+                let
+                    ( pageModel, pageCmd ) =
+                        ListsPage.init ListsMsg session
+                in
+                ( Lists pageModel, pageCmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -133,6 +145,9 @@ update msg model =
         ListsMsg pageMsg ->
             updateLists pageMsg model
 
+        LoginPendingMsg pageMsg ->
+            updateLoginPending pageMsg model
+
 
 updateLogin : Page.PageMsg LoginPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg pageModel =
@@ -143,6 +158,20 @@ updateLogin msg pageModel =
                     Page.update msg loginModel
             in
             ( Login newLoginModel, cmd )
+
+        _ ->
+            ( pageModel, Cmd.none )
+
+
+updateLoginPending : Page.PageMsg LoginPending.Msg -> Model -> ( Model, Cmd Msg )
+updateLoginPending msg pageModel =
+    case pageModel of
+        LoginPending loginPendingModel ->
+            let
+                ( newLoginPendingModel, cmd ) =
+                    Page.update msg loginPendingModel
+            in
+            ( LoginPending newLoginPendingModel, cmd )
 
         _ ->
             ( pageModel, Cmd.none )
@@ -189,10 +218,29 @@ view model =
 
                 Lists listsModel ->
                     Page.view listsModel
+
+                LoginPending loginPendingModel ->
+                    Page.view loginPendingModel
     in
     { title = "TODO - Elm"
     , body = [ page ]
     }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model of
+        List listModel ->
+            Page.subscriptions listModel
+
+        Login loginModel ->
+            Page.subscriptions loginModel
+
+        Lists listsModel ->
+            Page.subscriptions listsModel
+
+        LoginPending loginPendingModel ->
+            Page.subscriptions loginPendingModel
 
 
 getFlags : Model -> Flags
@@ -215,4 +263,7 @@ withSession with model =
             with (Page.getSession page)
 
         Lists page ->
+            with (Page.getSession page)
+
+        LoginPending page ->
             with (Page.getSession page)
