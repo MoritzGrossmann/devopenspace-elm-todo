@@ -3,7 +3,8 @@ ENV BUILD=/app
 RUN mkdir -p $BUILD
 RUN mkdir -p $BUILD/dist
 WORKDIR $BUILD
-COPY ./Elm .
+COPY ./Elm/src ./src
+COPY ./Elm/elm.json .
 RUN elm make ./src/Main.elm --output ./dist/todo.js
 
 FROM fpco/stack-build:lts-14.6 as haskellBuilder
@@ -15,10 +16,10 @@ RUN mkdir -p /app
 RUN mkdir -p /app/dist
 WORKDIR /app
 
-COPY ./Backend/Haskell/stack.yaml ./Backend/Haskell/TodoServer.cabal /app/
+COPY ./Backend/Haskell/stack.yaml ./Backend/Haskell/TodoServer.cabal ./
 RUN stack setup && stack install --dependencies-only
 
-COPY . /app
+COPY ./BackEnd/Haskell .
 RUN make deploy
 
 
