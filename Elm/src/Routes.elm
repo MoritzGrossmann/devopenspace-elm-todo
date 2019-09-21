@@ -70,6 +70,6 @@ route baseUrl =
     in
     UrlP.oneOf
         [ UrlP.map List (basePart </> UrlP.s "lists" </> UrlP.int </> UrlP.fragment filterParser)
-        , UrlP.map Login (basePart </> UrlP.s "login")
         , UrlP.map Lists (basePart </> UrlP.s "lists")
+        , UrlP.map Login (basePart </> UrlP.s "login")
         ]

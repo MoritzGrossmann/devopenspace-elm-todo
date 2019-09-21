@@ -4,5 +4,5 @@ authConfig:
     k: OpZDHdArPUQS1a7Oh360NdwALl7_m5C9p5_RLxe1V0K-eDzXpp2Z9YRAWiy1-yWnu3uBpJXDOQiE9WMDj44AJUfUVbOSoUlTReLhJZyVYi2uqX7BnaWSZ2N0jGZHDVqfS6rqGhnmaaILAU1V8Yg-FppU00au7Y-qX3eIHDd6KdMebcHJE3OXBat66a0xwk074KqNK5ct9I3zOjekuUpCNwC3wN7OCeigSckP2imCcKaDiZ3l4G0U8MrYSoQQgLpAiI8ucWJXHC2ZbyXzOgzeMemg9dzBXfvKzZnrEUGQy8CPCSGXXCT1lG2Y1PeSP3C-9lwIdoaQk7BCsg75SW1fiA
     kty: oct
 databasePath: /data/todos.db
-siteBaseUrl: /todo/
-apiBaseUrl: /todo/api
+siteBaseUrl: /
+apiBaseUrl: /api

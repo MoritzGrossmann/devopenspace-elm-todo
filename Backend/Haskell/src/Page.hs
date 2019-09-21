@@ -39,7 +39,11 @@ scripts :: Config -> H.Html
 scripts Config{..} = do
   traverse_ (\ref -> H.script "" ! A.src ref) jsSrcs
   H.script $ H.toHtml $ unlines
-    [ "Elm.Main.init({ flags: { baseUrlPath: '" ++ siteBaseUrl ++ "', apiUrl: '" ++ apiBaseUrl ++ "' } });" ]
+    [ "var app = Elm.Main.init({ flags: { baseUrlPath: '" ++ siteBaseUrl ++ "', apiUrl: '" ++ apiBaseUrl ++ "' } });"
+    , "window.initPorts(app);"
+    ]
   where
     jsSrcs =
-      [ fromString $ siteBaseUrl ++ "static/todo.js" ]
+      [ fromString $ siteBaseUrl ++ "static/ports.js"
+      , fromString $ siteBaseUrl ++ "static/todo.js"
+      ]
