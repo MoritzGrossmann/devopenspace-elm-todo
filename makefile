@@ -28,3 +28,7 @@ docker-build:
 .PHONY: docker-run
 docker-run: docker-build
 	docker run -ti --rm -p 8080:8080 -v $(shell pwd)/data:/data todo-server
+
+.PHONY: docker-pack
+docker-pack: docker-build
+	docker save todo-server | gzip > todo-server.tar.gz
