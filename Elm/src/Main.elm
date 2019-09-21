@@ -32,22 +32,30 @@ init flags location key =
         ( session, sessionCmd ) =
             Session.init flags key
     in
-    case Routes.locationToRoute flags.baseUrlPath location of
-        Just route ->
-            initPage session route
+    let
+        ( model, cmd ) =
+            case Routes.locationToRoute flags.baseUrlPath location of
+                Just route ->
+                    initPage session route
 
-        Nothing ->
-            let
-                ( initModel, initCmd ) =
-                    initPage session Routes.Login
-            in
-            ( initModel
-            , Cmd.batch
-                [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Login)
-                , initCmd
-                , sessionCmd
-                ]
-            )
+                Nothing ->
+                    let
+                        ( initModel, initCmd ) =
+                            initPage session Routes.Login
+                    in
+                    ( initModel
+                    , Cmd.batch
+                        [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Login)
+                        , initCmd
+                        ]
+                    )
+    in
+    ( model
+    , Cmd.batch
+        [ cmd
+        , sessionCmd
+        ]
+    )
 
 
 type Model

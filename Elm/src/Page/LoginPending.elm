@@ -61,4 +61,4 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view _ =
-    H.div [] []
+    H.div [] [ H.text "login pending..." ]
