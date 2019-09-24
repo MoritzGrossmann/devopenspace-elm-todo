@@ -14,7 +14,7 @@ module Settings
 import qualified Authentication as Auth
 import           Data.Aeson.TH (deriveJSON, defaultOptions)
 import           Data.Yaml (encodeFile, decodeFileEither)
-import qualified Page as Page
+import qualified Page
 
 data Settings = Settings
   { serverPort   :: Int

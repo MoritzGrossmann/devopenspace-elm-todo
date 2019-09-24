@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Authentication
     ( Config
@@ -27,6 +28,8 @@ import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Aeson.TH (deriveJSON, defaultOptions)
 import           Data.Text (Text)
 import           Data.Text.Encoding (decodeUtf8)
+import           Data.Swagger.ParamSchema (ToParamSchema)
+import           Data.Swagger.Schema (ToSchema)
 import qualified Db
 import qualified Db.Users as Db
 import           GHC.Generics
@@ -35,7 +38,6 @@ import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth, ToJWT, FromJWT, AuthResult, FromBasicAuthData, BasicAuthCfg)
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs (ToSample(..), singleSample, HasDocs(..))
 
 -- Authentication CONFIG
 
@@ -57,21 +59,13 @@ toSettings Config {..} = SAS.defaultJWTSettings jwtKey
 
 newtype AuthenticatedUser = AUser
   { auName :: Text
-  } deriving (Show, Generic)
+  } deriving (Show, Generic, ToParamSchema, ToSchema)
 
 instance ToJSON AuthenticatedUser
 instance FromJSON AuthenticatedUser
 instance ToJWT AuthenticatedUser
 instance FromJWT AuthenticatedUser
 
-instance ToSample AuthenticatedUser where
-  toSamples _ = singleSample $ AUser "todoUser"
-
-instance HasDocs rest => HasDocs (Auth '[SA.BasicAuth] AuthenticatedUser :> rest) where
-  docsFor _ = docsFor (Proxy :: Proxy rest) 
-
-instance HasDocs rest => HasDocs (Auth '[SA.JWT] AuthenticatedUser :> rest) where
-  docsFor _ = docsFor (Proxy :: Proxy rest)
 
 -- Servant helper functions
 

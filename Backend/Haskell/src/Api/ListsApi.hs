@@ -5,6 +5,8 @@
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 
 module Api.ListsApi
@@ -13,9 +15,12 @@ module Api.ListsApi
     ) where
 
 
+import           GHC.Generics
 import           Authentication (AuthenticatedUser (..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
+import           Data.Aeson (ToJSON, FromJSON)
+import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import qualified Db
 import qualified Db.Lists as Db
@@ -23,21 +28,20 @@ import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs
 
+newtype ListName 
+  = ListName Text
+  deriving (Generic, ToJSON, FromJSON, ToSchema)
 
 type ListsApi =
   Auth '[SA.JWT] AuthenticatedUser :>
   "list" :> (
     Get '[JSON] [Db.List]
     :<|> ReqBody '[JSON] Db.List :> Put '[JSON] Db.List
-    :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.List
+    :<|> ReqBody '[JSON] ListName :> Post '[JSON] Db.List
     :<|> Capture "id" Db.ListId :> Delete '[JSON] [Db.List]
     :<|> Capture "id" Db.ListId :> Get '[JSON] Db.List
   )
-
-instance ToCapture (Capture "id" Db.ListId) where
-  toCapture _ = DocCapture "id" "ID der Liste die benutzt werden soll"
 
 server :: Db.Handle -> Server ListsApi
 server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHandlers
@@ -62,7 +66,7 @@ server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHa
         Nothing -> throwError notFound
         Just l -> return l
 
-    newHandler userName txt = do
+    newHandler userName (ListName txt) = do
       list <- Db.insertList userName txt
       liftIO $ putStrLn $ "created new list - redirecting to " ++ show (Db.id list)
       return list

@@ -5,6 +5,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 
 module Api.TodosApi
@@ -13,11 +15,14 @@ module Api.TodosApi
     ) where
 
 
+import           GHC.Generics
 import           Authentication (AuthenticatedUser(..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
+import           Data.Aeson (ToJSON, FromJSON)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
+import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import qualified Db
 import qualified Db.Lists as DbL
@@ -27,7 +32,10 @@ import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs
+
+newtype TaskText 
+  = TaskText Text
+  deriving (Generic, ToJSON, FromJSON, ToSchema)
 
 
 type TodosApi =
@@ -35,7 +43,7 @@ type TodosApi =
     "list" :> Capture "listId" ListId :>
       "todos" :> (
         Get '[JSON] [Db.Task]
-        :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
+        :<|> ReqBody '[JSON] TaskText :> Post '[JSON] Db.Task
       )
     :<|> "todos" :> (
         ReqBody '[JSON] Db.Task :> Put '[JSON] Db.Task
@@ -43,13 +51,6 @@ type TodosApi =
         :<|> Capture "id" Db.TaskId :> Get '[JSON] Db.Task
     )
   )
-
-instance ToCapture (Capture "id" Db.TaskId) where
-  toCapture _ = DocCapture "id" "ID des Tasks der benutzt werden soll"
-
-instance ToCapture (Capture "listId" ListId) where
-  toCapture _ = DocCapture "id" "ID der Liste die benutzt werden soll"
-
 
 server :: Db.Handle -> Server TodosApi
 server dbHandle = hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers
@@ -81,7 +82,7 @@ server dbHandle = hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHan
         Nothing -> throwError notFound
         Just t-> return t
 
-    newHandler userName listId txt = do
+    newHandler userName listId (TaskText txt) = do
       task <- Db.insertTask userName listId txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show (Db.id task)
       return task

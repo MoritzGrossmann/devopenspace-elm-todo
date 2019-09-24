@@ -8,7 +8,6 @@
 module App
     ( startApp
     , app
-    , writeDocs
     ) where
 
 import qualified Authentication as Auth
@@ -20,7 +19,6 @@ import           Api.TodosApi (TodosApi)
 import qualified Api.TodosApi as TodosApi
 import           Api.UsersApi (UsersApi)
 import qualified Api.UsersApi as UsersApi
-import           Data.Text (Text)
 import qualified Db
 import           Network.Wai (Application)
 import           Network.Wai.Handler.Warp (run)
@@ -28,8 +26,9 @@ import           Network.Wai.Middleware.Cors
 import qualified Page
 import           Servant
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs (ToSample(..), singleSample)
-import qualified Servant.Docs as Docs
+import           Servant.Auth.Swagger ()
+import qualified Servant.Swagger as Sw
+import qualified Servant.Swagger.UI as SwUI
 import           Settings (Settings(..), loadSettings, toPageConfig)
 
 startApp :: FilePath -> IO ()
@@ -47,26 +46,22 @@ startApp settingsPath = do
 -- prefix APIs with "api/"
 type ApiProxy = "api" :> (UsersApi :<|> ListsApi :<|> TodosApi)
 type WebProxy = RouteApi
+type API = SwUI.SwaggerSchemaUI "swagger-ui" "swagger.json" :<|> ApiProxy :<|> WebProxy
+
 
 app :: Db.Handle -> Page.Config -> SAS.JWTSettings -> Application
 app dbHandle pageConfig jwtSettings = myCors $ do
   let authCfg = Auth.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
-  Servant.serveWithContext (Proxy :: Proxy (ApiProxy :<|> WebProxy)) cfg $
-    (UsersApi.server dbHandle jwtSettings
+  Servant.serveWithContext (Proxy :: Proxy API) cfg $
+    SwUI.swaggerSchemaUIServer swaggerDoc
+    :<|> (UsersApi.server dbHandle jwtSettings
     :<|> ListsApi.server dbHandle
     :<|> TodosApi.server dbHandle)
-    :<|> (RouteApi.server pageConfig)
+    :<|> RouteApi.server pageConfig
   where
     myCors = cors $ const $ Just myPolicy
     myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods
                                         , corsRequestHeaders = ["Content-Type", "authorization"] }
     myMethods = simpleMethods ++ ["PUT", "DELETE", "OPTIONS", "GET"]
-
-writeDocs :: FilePath -> IO ()
-writeDocs outputFile = do
-  let doc = Docs.markdown $ Docs.docs (Proxy :: Proxy (UsersApi :<|> ListsApi :<|> TodosApi))
-  writeFile outputFile doc
-
-instance ToSample Text where
-  toSamples _ = singleSample "Text"
+    swaggerDoc = Sw.toSwagger (Proxy :: Proxy ApiProxy)
