@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 
 module Api.TodosApi
@@ -16,6 +17,7 @@ module Api.TodosApi
 import           Authentication (AuthenticatedUser(..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
+import           Data.Aeson (ToJSON, FromJSON)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
 import           Data.Text (Text)
@@ -29,13 +31,21 @@ import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
 import           Servant.Docs
 
+newtype TaskText 
+  = TaskText Text
+  deriving (ToJSON, FromJSON)
+
+instance ToSample TaskText where
+  toSamples _ = singleSample $ 
+     TaskText "Text des neuen Tasks"
+
 
 type TodosApi =
   Auth '[SA.JWT] AuthenticatedUser :> (
     "list" :> Capture "listId" ListId :>
       "todos" :> (
         Get '[JSON] [Db.Task]
-        :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
+        :<|> ReqBody '[JSON] TaskText :> Post '[JSON] Db.Task
       )
     :<|> "todos" :> (
         ReqBody '[JSON] Db.Task :> Put '[JSON] Db.Task
@@ -81,7 +91,7 @@ server dbHandle = hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHan
         Nothing -> throwError notFound
         Just t-> return t
 
-    newHandler userName listId txt = do
+    newHandler userName listId (TaskText txt) = do
       task <- Db.insertTask userName listId txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show (Db.id task)
       return task

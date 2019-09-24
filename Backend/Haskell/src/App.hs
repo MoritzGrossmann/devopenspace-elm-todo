@@ -20,7 +20,6 @@ import           Api.TodosApi (TodosApi)
 import qualified Api.TodosApi as TodosApi
 import           Api.UsersApi (UsersApi)
 import qualified Api.UsersApi as UsersApi
-import           Data.Text (Text)
 import qualified Db
 import           Network.Wai (Application)
 import           Network.Wai.Handler.Warp (run)
@@ -28,7 +27,6 @@ import           Network.Wai.Middleware.Cors
 import qualified Page
 import           Servant
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs (ToSample(..), singleSample)
 import qualified Servant.Docs as Docs
 import           Settings (Settings(..), loadSettings, toPageConfig)
 
@@ -56,7 +54,7 @@ app dbHandle pageConfig jwtSettings = myCors $ do
     (UsersApi.server dbHandle jwtSettings
     :<|> ListsApi.server dbHandle
     :<|> TodosApi.server dbHandle)
-    :<|> (RouteApi.server pageConfig)
+    :<|> RouteApi.server pageConfig
   where
     myCors = cors $ const $ Just myPolicy
     myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods
@@ -68,5 +66,3 @@ writeDocs outputFile = do
   let doc = Docs.markdown $ Docs.docs (Proxy :: Proxy (UsersApi :<|> ListsApi :<|> TodosApi))
   writeFile outputFile doc
 
-instance ToSample Text where
-  toSamples _ = singleSample "Text"

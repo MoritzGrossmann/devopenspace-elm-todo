@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns, OverloadedStrings #-}
 module Models.User
   ( Login (..)
+  , ChangePassword (..)
   , User (..)
   , UserName
   , create
@@ -25,6 +26,19 @@ data Login = Login
 
 $(deriveJSON defaultOptions ''Login)
 
+instance ToSample Login where
+  toSamples _ = singleSample $ Login "your-username" "top secret pa$$w0rd"
+
+data ChangePassword = ChangePassword
+  { oldPassword :: Text
+  , newPassword :: Text
+  } deriving Show
+
+$(deriveJSON defaultOptions ''ChangePassword)
+
+instance ToSample ChangePassword where
+  toSamples _ = singleSample $ ChangePassword "oldPassword" "newPassword"
+
 data User = User
   { userName   :: UserName
   , userPwHash :: ByteString
@@ -47,5 +61,3 @@ validatePassword :: User -> Text -> Bool
 validatePassword User{userPwHash} pwd =
   BC.validatePassword userPwHash $ encodeUtf8 pwd
 
-instance ToSample Login where
-  toSamples _ = singleSample $ Login "your-username" "top secret pa$$w0rd"

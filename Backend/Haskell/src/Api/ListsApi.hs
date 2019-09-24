@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 
 module Api.ListsApi
@@ -16,6 +17,7 @@ module Api.ListsApi
 import           Authentication (AuthenticatedUser (..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
+import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Text (Text)
 import qualified Db
 import qualified Db.Lists as Db
@@ -25,13 +27,20 @@ import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
 import           Servant.Docs
 
+newtype ListName 
+  = ListName Text
+  deriving (ToJSON, FromJSON)
+
+instance ToSample ListName where
+  toSamples _ = singleSample $ 
+     ListName "Name der neuen Liste"
 
 type ListsApi =
   Auth '[SA.JWT] AuthenticatedUser :>
   "list" :> (
     Get '[JSON] [Db.List]
     :<|> ReqBody '[JSON] Db.List :> Put '[JSON] Db.List
-    :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.List
+    :<|> ReqBody '[JSON] ListName :> Post '[JSON] Db.List
     :<|> Capture "id" Db.ListId :> Delete '[JSON] [Db.List]
     :<|> Capture "id" Db.ListId :> Get '[JSON] Db.List
   )
@@ -62,7 +71,7 @@ server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHa
         Nothing -> throwError notFound
         Just l -> return l
 
-    newHandler userName txt = do
+    newHandler userName (ListName txt) = do
       list <- Db.insertList userName txt
       liftIO $ putStrLn $ "created new list - redirecting to " ++ show (Db.id list)
       return list
