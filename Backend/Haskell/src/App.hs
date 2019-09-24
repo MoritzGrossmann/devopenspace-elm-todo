@@ -27,7 +27,10 @@ import           Network.Wai.Middleware.Cors
 import qualified Page
 import           Servant
 import qualified Servant.Auth.Server as SAS
+import           Servant.Auth.Swagger ()
 import qualified Servant.Docs as Docs
+import qualified Servant.Swagger as Sw
+import qualified Servant.Swagger.UI as SwUI
 import           Settings (Settings(..), loadSettings, toPageConfig)
 
 startApp :: FilePath -> IO ()
@@ -45,13 +48,16 @@ startApp settingsPath = do
 -- prefix APIs with "api/"
 type ApiProxy = "api" :> (UsersApi :<|> ListsApi :<|> TodosApi)
 type WebProxy = RouteApi
+type API = SwUI.SwaggerSchemaUI "swagger-ui" "swagger.json" :<|> ApiProxy :<|> WebProxy
+
 
 app :: Db.Handle -> Page.Config -> SAS.JWTSettings -> Application
 app dbHandle pageConfig jwtSettings = myCors $ do
   let authCfg = Auth.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
-  Servant.serveWithContext (Proxy :: Proxy (ApiProxy :<|> WebProxy)) cfg $
-    (UsersApi.server dbHandle jwtSettings
+  Servant.serveWithContext (Proxy :: Proxy API) cfg $
+    SwUI.swaggerSchemaUIServer swaggerDoc
+    :<|> (UsersApi.server dbHandle jwtSettings
     :<|> ListsApi.server dbHandle
     :<|> TodosApi.server dbHandle)
     :<|> RouteApi.server pageConfig
@@ -60,6 +66,7 @@ app dbHandle pageConfig jwtSettings = myCors $ do
     myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods
                                         , corsRequestHeaders = ["Content-Type", "authorization"] }
     myMethods = simpleMethods ++ ["PUT", "DELETE", "OPTIONS", "GET"]
+    swaggerDoc = Sw.toSwagger (Proxy :: Proxy ApiProxy)
 
 writeDocs :: FilePath -> IO ()
 writeDocs outputFile = do

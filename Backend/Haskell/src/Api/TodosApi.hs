@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 
 module Api.TodosApi
@@ -14,12 +15,14 @@ module Api.TodosApi
     ) where
 
 
+import           GHC.Generics
 import           Authentication (AuthenticatedUser(..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
 import           Data.Aeson (ToJSON, FromJSON)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
+import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import qualified Db
 import qualified Db.Lists as DbL
@@ -33,7 +36,7 @@ import           Servant.Docs
 
 newtype TaskText 
   = TaskText Text
-  deriving (ToJSON, FromJSON)
+  deriving (Generic, ToJSON, FromJSON, ToSchema)
 
 instance ToSample TaskText where
   toSamples _ = singleSample $ 

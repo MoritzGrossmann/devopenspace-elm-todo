@@ -22,22 +22,26 @@ import           Data.Aeson (ToJSON)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Text (Text)
 import           Data.Text.Encoding (decodeUtf8)
+import           Data.Swagger.Schema (ToSchema)
+import           Data.Swagger.ParamSchema (ToParamSchema)
 import qualified Db
 import qualified Db.Users as Db
 import qualified Models.User as User
 import           Servant
+import           Servant.Auth (Auth)
 import qualified Servant.Auth as SA
-import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
 import           Servant.Docs (ToSample(..), singleSample)
 
 newtype JwtToken 
   = JwtToken Text
-  deriving ToJSON
+  deriving (ToJSON, ToSchema, ToParamSchema)
 
 instance ToSample JwtToken where
   toSamples _ = singleSample $ 
      JwtToken "eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiYXVOYW1lIjoiQmF0bWFuIn19.ooUdce2IFf5py1UK6vzSpSaH8APECzl0Gp8V5I7-6OIk-vgXtroQpYfkhLH2gmq0aPIeTS5v0fjlRAx-uwZCaA"
+
+instance ToSchema NoContent
 
 type UsersApi =
   "user" :> (

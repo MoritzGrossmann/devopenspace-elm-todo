@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Authentication
     ( Config
@@ -27,6 +28,8 @@ import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Aeson.TH (deriveJSON, defaultOptions)
 import           Data.Text (Text)
 import           Data.Text.Encoding (decodeUtf8)
+import           Data.Swagger.ParamSchema (ToParamSchema)
+import           Data.Swagger.Schema (ToSchema)
 import qualified Db
 import qualified Db.Users as Db
 import           GHC.Generics
@@ -57,7 +60,7 @@ toSettings Config {..} = SAS.defaultJWTSettings jwtKey
 
 newtype AuthenticatedUser = AUser
   { auName :: Text
-  } deriving (Show, Generic)
+  } deriving (Show, Generic, ToParamSchema, ToSchema)
 
 instance ToJSON AuthenticatedUser
 instance FromJSON AuthenticatedUser

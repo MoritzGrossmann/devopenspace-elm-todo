@@ -39,11 +39,16 @@ library
                      , bytestring
                      , jose
                      , mtl
+                     , scientific
                      , servant-auth
                      , servant-auth-server
+                     , servant-auth-swagger
                      , servant-blaze
                      , servant-docs
                      , servant-server
+                     , servant-swagger
+                     , servant-swagger-ui
+                     , swagger2
                      , sqlite-simple
                      , stm
                      , text

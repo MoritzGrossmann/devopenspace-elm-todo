@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 
 module Api.ListsApi
@@ -14,10 +15,12 @@ module Api.ListsApi
     ) where
 
 
+import           GHC.Generics
 import           Authentication (AuthenticatedUser (..), hoistServerWithAuth)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT)
 import           Data.Aeson (ToJSON, FromJSON)
+import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import qualified Db
 import qualified Db.Lists as Db
@@ -29,7 +32,7 @@ import           Servant.Docs
 
 newtype ListName 
   = ListName Text
-  deriving (ToJSON, FromJSON)
+  deriving (Generic, ToJSON, FromJSON, ToSchema)
 
 instance ToSample ListName where
   toSamples _ = singleSample $ 
