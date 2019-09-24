@@ -8,7 +8,6 @@
 module App
     ( startApp
     , app
-    , writeDocs
     ) where
 
 import qualified Authentication as Auth
@@ -28,7 +27,6 @@ import qualified Page
 import           Servant
 import qualified Servant.Auth.Server as SAS
 import           Servant.Auth.Swagger ()
-import qualified Servant.Docs as Docs
 import qualified Servant.Swagger as Sw
 import qualified Servant.Swagger.UI as SwUI
 import           Settings (Settings(..), loadSettings, toPageConfig)
@@ -67,9 +65,3 @@ app dbHandle pageConfig jwtSettings = myCors $ do
                                         , corsRequestHeaders = ["Content-Type", "authorization"] }
     myMethods = simpleMethods ++ ["PUT", "DELETE", "OPTIONS", "GET"]
     swaggerDoc = Sw.toSwagger (Proxy :: Proxy ApiProxy)
-
-writeDocs :: FilePath -> IO ()
-writeDocs outputFile = do
-  let doc = Docs.markdown $ Docs.docs (Proxy :: Proxy (UsersApi :<|> ListsApi :<|> TodosApi))
-  writeFile outputFile doc
-

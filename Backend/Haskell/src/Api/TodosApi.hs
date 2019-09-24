@@ -32,15 +32,10 @@ import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs
 
 newtype TaskText 
   = TaskText Text
   deriving (Generic, ToJSON, FromJSON, ToSchema)
-
-instance ToSample TaskText where
-  toSamples _ = singleSample $ 
-     TaskText "Text des neuen Tasks"
 
 
 type TodosApi =
@@ -56,13 +51,6 @@ type TodosApi =
         :<|> Capture "id" Db.TaskId :> Get '[JSON] Db.Task
     )
   )
-
-instance ToCapture (Capture "id" Db.TaskId) where
-  toCapture _ = DocCapture "id" "ID des Tasks der benutzt werden soll"
-
-instance ToCapture (Capture "listId" ListId) where
-  toCapture _ = DocCapture "id" "ID der Liste die benutzt werden soll"
-
 
 server :: Db.Handle -> Server TodosApi
 server dbHandle = hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers

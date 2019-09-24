@@ -10,4 +10,4 @@
 
 ## API
 
-siehe [Docs](./docs.md)
+Server Starten und [/swagger-ui](http://leastfixedpoint.net/todo/swagger-ui) aufrufen

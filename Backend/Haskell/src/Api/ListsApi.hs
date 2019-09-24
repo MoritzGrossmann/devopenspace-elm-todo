@@ -28,15 +28,10 @@ import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs
 
 newtype ListName 
   = ListName Text
   deriving (Generic, ToJSON, FromJSON, ToSchema)
-
-instance ToSample ListName where
-  toSamples _ = singleSample $ 
-     ListName "Name der neuen Liste"
 
 type ListsApi =
   Auth '[SA.JWT] AuthenticatedUser :>
@@ -47,9 +42,6 @@ type ListsApi =
     :<|> Capture "id" Db.ListId :> Delete '[JSON] [Db.List]
     :<|> Capture "id" Db.ListId :> Get '[JSON] Db.List
   )
-
-instance ToCapture (Capture "id" Db.ListId) where
-  toCapture _ = DocCapture "id" "ID der Liste die benutzt werden soll"
 
 server :: Db.Handle -> Server ListsApi
 server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHandlers

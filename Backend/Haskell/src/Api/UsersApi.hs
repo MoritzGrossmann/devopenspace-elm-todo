@@ -31,15 +31,10 @@ import           Servant
 import           Servant.Auth (Auth)
 import qualified Servant.Auth as SA
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs (ToSample(..), singleSample)
 
 newtype JwtToken 
   = JwtToken Text
   deriving (ToJSON, ToSchema, ToParamSchema)
-
-instance ToSample JwtToken where
-  toSamples _ = singleSample $ 
-     JwtToken "eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiYXVOYW1lIjoiQmF0bWFuIn19.ooUdce2IFf5py1UK6vzSpSaH8APECzl0Gp8V5I7-6OIk-vgXtroQpYfkhLH2gmq0aPIeTS5v0fjlRAx-uwZCaA"
 
 instance ToSchema NoContent
 

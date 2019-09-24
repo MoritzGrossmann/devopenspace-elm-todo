@@ -11,14 +11,10 @@ import Data.Swagger.Schema (ToSchema)
 import Database.SQLite.Simple.ToField (ToField)
 import Database.SQLite.Simple.FromField (FromField)
 import Servant (FromHttpApiData)
-import Servant.Docs (ToSample(..), singleSample)
 
 
 newtype ListId
   = ListId { getIdValue :: Int64 }
   deriving (Generic, Show, Eq, FromJSON, ToJSON, ToField, FromField, FromHttpApiData, ToParamSchema)
-
-instance ToSample ListId where
-  toSamples _ = singleSample $ ListId 42
 
 instance ToSchema ListId

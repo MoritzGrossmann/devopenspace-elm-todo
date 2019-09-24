@@ -38,7 +38,6 @@ import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth, ToJWT, FromJWT, AuthResult, FromBasicAuthData, BasicAuthCfg)
 import qualified Servant.Auth.Server as SAS
-import           Servant.Docs (ToSample(..), singleSample, HasDocs(..))
 
 -- Authentication CONFIG
 
@@ -67,14 +66,6 @@ instance FromJSON AuthenticatedUser
 instance ToJWT AuthenticatedUser
 instance FromJWT AuthenticatedUser
 
-instance ToSample AuthenticatedUser where
-  toSamples _ = singleSample $ AUser "todoUser"
-
-instance HasDocs rest => HasDocs (Auth '[SA.BasicAuth] AuthenticatedUser :> rest) where
-  docsFor _ = docsFor (Proxy :: Proxy rest) 
-
-instance HasDocs rest => HasDocs (Auth '[SA.JWT] AuthenticatedUser :> rest) where
-  docsFor _ = docsFor (Proxy :: Proxy rest)
 
 -- Servant helper functions
 

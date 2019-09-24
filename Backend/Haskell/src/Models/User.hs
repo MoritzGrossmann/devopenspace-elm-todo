@@ -18,7 +18,6 @@ import           Data.Text (Text)
 import           Data.Text.Encoding (encodeUtf8)
 import           Data.Swagger.Schema (ToSchema)
 import           Data.Swagger.ParamSchema (ToParamSchema(..))
-import           Servant.Docs (ToSample (..), singleSample)
 
 type UserName = Text
 
@@ -28,9 +27,6 @@ data Login = Login
   } deriving (Generic, Show)
 
 $(deriveJSON defaultOptions ''Login)
-
-instance ToSample Login where
-  toSamples _ = singleSample $ Login "your-username" "top secret pa$$w0rd"
 
 instance ToSchema Login
 instance ToParamSchema Login where
@@ -46,9 +42,6 @@ $(deriveJSON defaultOptions ''ChangePassword)
 instance ToSchema ChangePassword
 instance ToParamSchema ChangePassword where
   toParamSchema _ = mempty
-
-instance ToSample ChangePassword where
-  toSamples _ = singleSample $ ChangePassword "oldPassword" "newPassword"
 
 data User = User
   { userName   :: UserName
