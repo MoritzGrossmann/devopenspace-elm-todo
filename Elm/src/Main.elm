@@ -119,10 +119,10 @@ update msg model =
                 Browser.Internal url ->
                     case Routes.locationToRoute (model |> getFlags).baseUrlPath url of
                         Nothing ->
-                            ( model, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) )
+                            ( model, Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) )
 
                         Just route ->
-                            ( model, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath route) )
+                            ( model, Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath route) )
 
                 Browser.External url ->
                     ( model, Nav.load url )
