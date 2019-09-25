@@ -4,7 +4,6 @@ import Api.Lists
 import Api.Todos as Api
 import Browser.Dom as Dom
 import Components.Todos as Todos exposing (Filter(..), Todos)
-import Dict
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
@@ -25,7 +24,11 @@ type alias Page msg =
 type alias Model =
     { todos : Todos
     , newText : String
-    , editingItem : Maybe { id : Todos.Id, text : String }
+    , editingItem :
+        Maybe
+            { id : Todos.Id
+            , text : String
+            }
     , activeFilter : Filter
     , session : Session
     , listId : TodoList.Id
@@ -183,7 +186,7 @@ update msg model =
                 ( deleteCmds, deletedTodos ) =
                     Todos.completedTodos model.todos
                         |> List.foldl
-                            (\item ( cmds, todos ) ->
+                            (\item ( cmds, _ ) ->
                                 let
                                     newTodos =
                                         Todos.deleteItem item.id model.todos

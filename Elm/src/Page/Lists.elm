@@ -76,7 +76,7 @@ update msg model =
             , Cmd.none
             )
 
-        NeueListeResult (Err httpError) ->
+        NeueListeResult (Err _) ->
             ( model, Cmd.none )
 
         DeleteList id ->
@@ -109,7 +109,7 @@ view model =
             [ Attr.class "todo-list" ]
             (model.lists
                 |> RemoteData.map
-                    (\dict -> dict |> Dict.toList |> List.map (\( i, m ) -> viewListItem model.session m))
+                    (\dict -> dict |> Dict.toList |> List.map (\( _, m ) -> viewListItem model.session m))
                 |> RemoteData.withDefault []
             )
         ]
