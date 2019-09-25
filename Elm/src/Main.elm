@@ -3,7 +3,6 @@ module Main exposing (main)
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
-import LocalStorage
 import Page
 import Page.List as ListPage
 import Page.Lists as ListsPage
@@ -66,8 +65,7 @@ type Model
 
 
 type Msg
-    = NoOp
-    | UrlRequested UrlRequest
+    = UrlRequested UrlRequest
     | UrlChanged Url
     | ListMsg (Page.PageMsg ListPage.Msg)
     | LoginMsg (Page.PageMsg LoginPage.Msg)
@@ -111,9 +109,6 @@ initPage session route =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
-
         UrlRequested urlRequest ->
             case urlRequest of
                 Browser.Internal url ->

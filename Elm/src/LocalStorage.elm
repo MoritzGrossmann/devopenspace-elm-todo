@@ -7,6 +7,7 @@ type alias StorageKey =
     String
 
 
+authorizationKey : String
 authorizationKey =
     "Authorization"
 
