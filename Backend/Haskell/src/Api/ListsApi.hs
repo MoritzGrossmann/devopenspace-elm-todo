@@ -12,7 +12,6 @@
 module Api.ListsApi
     ( ListsApi
     , serverT
-    , Db.handleWithDb
     ) where
 
 
@@ -22,8 +21,7 @@ import           Control.Monad.Trans.Class (lift)
 import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
-import           Db.Lists (ListHandler)
-import qualified Db.Lists as Db
+import           Db.Carrier (DbHandler)
 import           GHC.Generics
 import qualified Models.Lists as L
 import           Models.User (UserName)
@@ -46,7 +44,7 @@ type ListsApi =
     :<|> Capture "id" L.ListId :> Get '[JSON] L.List
   )
 
-serverT :: ServerT ListsApi ListHandler
+serverT :: ServerT ListsApi DbHandler
 serverT = listsHandlers
   where
     listsHandlers (SAS.Authenticated user) =
@@ -63,11 +61,11 @@ serverT = listsHandlers
       :<|> (\_ -> throwErr401)
       :<|> (\_ -> throwErr401)
 
-    getAllHandler :: UserName -> ListHandler [L.List]
+    getAllHandler :: UserName -> DbHandler [L.List]
     getAllHandler =
       L.getAll
 
-    updateHandler :: UserName -> L.List -> ListHandler L.List
+    updateHandler :: UserName -> L.List -> DbHandler L.List
     updateHandler userName list = do
       liftIO $ putStrLn $ "updating list " ++ show (L.id list)
       L.modify userName list
@@ -76,19 +74,19 @@ serverT = listsHandlers
         Nothing -> liftHandler $ throwError notFound
         Just l -> return l
 
-    newHandler :: UserName -> ListName -> ListHandler L.List
+    newHandler :: UserName -> ListName -> DbHandler L.List
     newHandler userName (ListName txt) = do
       list <- L.create userName txt
       liftIO $ putStrLn $ "created new list - redirecting to " ++ show (L.id list)
       return list
 
-    deleteHandler :: UserName -> L.ListId -> ListHandler [L.List]
+    deleteHandler :: UserName -> L.ListId -> DbHandler [L.List]
     deleteHandler userName lId = do
       L.delete userName lId
       liftIO $ putStrLn $ "deleted list " ++ show lId
       L.getAll userName
 
-    queryHandler :: UserName -> L.ListId -> ListHandler L.List
+    queryHandler :: UserName -> L.ListId -> DbHandler L.List
     queryHandler userName lId = do
       liftIO $ putStrLn $ "getting list " ++ show lId
       found <- L.getOne userName lId
@@ -96,7 +94,7 @@ serverT = listsHandlers
         Nothing -> liftHandler $ throwError notFound
         Just list -> return list
 
-    liftHandler :: Handler a -> ListHandler a
+    liftHandler :: Handler a -> DbHandler a
     liftHandler = lift . lift . lift
 
     throwErr401 = liftHandler $ throwError err401

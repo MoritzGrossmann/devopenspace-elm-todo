@@ -1,14 +1,20 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Db
   ( Handle
   , initDb
   , useHandle
+  , DbHandler
+  , handleWithDb
+  , runActionDb
   ) where
 
 import           Control.Concurrent.MVar (newMVar)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (runReaderT)
+import           Db.Carrier
 import           Db.Internal
 import qualified Db.Lists as DbLists
 import qualified Db.Tasks as DbTasks

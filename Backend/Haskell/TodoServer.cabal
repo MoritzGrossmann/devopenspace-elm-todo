@@ -21,6 +21,7 @@ library
                      , Api.UsersApi
                      , Authentication
                      , Db
+                     , Db.Carrier
                      , Db.Internal
                      , Db.Lists
                      , Db.Tasks
