@@ -19,6 +19,8 @@ module Db.Lists
   , insertList
   , deleteList
   , modifyList
+  , ListsTag
+  , runListsActionDb
   ) where
 
 import           Context.Internal
@@ -37,8 +39,13 @@ import           Models.Lists (ListAction(..), ListId(..), List(..))
 import           Models.User (UserName)
 
 
+data ListsTag
+
+runListsActionDb :: ActionDbCarrier ListsTag m a -> m a
+runListsActionDb = runActionDbCarrier
+
 instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
-  => Carrier (ListAction :+: sig) (ActionDbCarrier m) where
+  => Carrier (ListAction :+: sig) (ActionDbCarrier ListsTag m) where
   eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
   eff (L (Exists userName listId k)) =
     liftDb (listExists userName listId) >>= k

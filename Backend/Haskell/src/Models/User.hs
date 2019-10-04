@@ -1,23 +1,33 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns, OverloadedStrings, DeriveGeneric #-}
 module Models.User
   ( Login (..)
   , ChangePassword (..)
   , User (..)
   , UserName
+  , UserAction (..)
+  , get
   , create
+  , update
+  , delete
+  , createIO
   , validate
   , validatePassword
   ) where
 
-import           GHC.Generics
+import           Control.Effect (Effect)
+import           Control.Effect.Carrier (HFunctor, send)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Crypto.BCrypt as BC
 import           Data.Aeson.TH (deriveJSON, defaultOptions)
 import           Data.ByteString (ByteString)
+import           Data.Swagger.ParamSchema (ToParamSchema(..))
+import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import           Data.Text.Encoding (encodeUtf8)
-import           Data.Swagger.Schema (ToSchema)
-import           Data.Swagger.ParamSchema (ToParamSchema(..))
+import           GHC.Generics
+import           Imports
 
 type UserName = Text
 
@@ -48,9 +58,37 @@ data User = User
   , userPwHash :: ByteString
   } deriving Show
 
+data UserAction m k
+  = Get UserName (Maybe User -> m k)
+  | Insert User (m k)
+  | Update UserName User (m k)
+  | Delete UserName (m k)
+  deriving (Functor, Generic1)
 
-create :: MonadIO m => Login -> m (Maybe User)
-create Login{..} =
+instance HFunctor UserAction
+instance Effect UserAction
+
+get :: Has UserAction sig m => UserName -> m (Maybe User)
+get userName = send (Get userName pure)
+
+create :: (MonadIO m, Has UserAction sig m) => Login -> m (Maybe User)
+create login = do
+  user' <- liftIO $ createIO login
+  case user' of
+    Just user -> do
+      send (Insert user (pure ()))
+      pure (Just user)
+    Nothing -> pure Nothing
+
+update :: Has UserAction sig m => UserName -> User -> m ()
+update userName user = send (Update userName user (pure ()))
+
+delete :: Has UserAction sig m => UserName -> m ()
+delete userName = send (Delete userName (pure ()))
+
+
+createIO :: MonadIO m => Login -> m (Maybe User)
+createIO Login{..} =
   fmap (User name) <$> pwHash
   where
   pwHash = do

@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TypeApplications  #-}
 
 
 module App
@@ -40,10 +41,10 @@ startApp settingsPath = do
   putStrLn $ "initializing Database in " ++ databasePath
   dbHandle <- Db.initDb databasePath
 
-  let context = Context dbHandle
+  let context = Context dbHandle (Auth.toSettings authConfig)
 
   putStrLn $ "starting Server on " ++ show serverPort
-  run serverPort $ app context (toPageConfig settings) (Auth.toSettings authConfig)
+  run serverPort $ app context (toPageConfig settings)
 
 
 -- prefix APIs with "api/"
@@ -52,14 +53,15 @@ type WebProxy = RouteApi
 type API = SwUI.SwaggerSchemaUI "swagger-ui" "swagger.json" :<|> ApiProxy :<|> WebProxy
 
 
-app :: Context -> Page.Config -> SAS.JWTSettings -> Application
-app context pageConfig jwtSettings = myCors $ do
+app :: Context -> Page.Config -> Application
+app context pageConfig = myCors $ do
   let dbHandle = contextDbHandle context
+      jwtSettings = contextJwtSettings context
       authCfg = Auth.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
   Servant.serveWithContext (Proxy :: Proxy API) cfg $
     SwUI.swaggerSchemaUIServer swaggerDoc
-    :<|> (UsersApi.server dbHandle jwtSettings
+    :<|> ((Auth.hoistServerWithAuth (Proxy @UsersApi) (Db.handleWithContext context) UsersApi.serverT)
     :<|> (Auth.hoistServerWithAuth (Proxy :: Proxy ListsApi) (Db.handleWithContext context) ListsApi.serverT)
     :<|> TodosApi.server dbHandle)
     :<|> RouteApi.server pageConfig

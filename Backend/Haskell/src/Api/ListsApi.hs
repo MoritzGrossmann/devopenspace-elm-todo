@@ -17,11 +17,10 @@ module Api.ListsApi
 
 import           Authentication (AuthenticatedUser (..))
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Trans.Class (lift)
 import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
-import           Db.Carrier (DbHandler)
+import           Db (DbHandler, liftHandler)
 import           GHC.Generics
 import qualified Models.Lists as L
 import           Models.User (UserName)
@@ -93,9 +92,6 @@ serverT = listsHandlers
       case found of
         Nothing -> liftHandler $ throwError notFound
         Just list -> return list
-
-    liftHandler :: Handler a -> DbHandler a
-    liftHandler = lift . lift . lift
 
     throwErr401 = liftHandler $ throwError err401
 

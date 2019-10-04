@@ -11,28 +11,27 @@
 
 module Api.UsersApi
     ( UsersApi
-    , server
+    , serverT
     ) where
 
 
 import           Authentication
+import           Context (getJwtSettings)
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Reader (ReaderT, runReaderT)
 import           Data.Aeson (ToJSON)
 import qualified Data.ByteString.Lazy as BSL
+import           Data.Swagger.ParamSchema (ToParamSchema)
+import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import           Data.Text.Encoding (decodeUtf8)
-import           Data.Swagger.Schema (ToSchema)
-import           Data.Swagger.ParamSchema (ToParamSchema)
-import qualified Db
-import qualified Db.Users as Db
+import           Db (DbHandler, liftHandler)
 import qualified Models.User as User
 import           Servant
 import           Servant.Auth (Auth)
 import qualified Servant.Auth as SA
 import qualified Servant.Auth.Server as SAS
 
-newtype JwtToken 
+newtype JwtToken
   = JwtToken Text
   deriving (ToJSON, ToSchema, ToParamSchema)
 
@@ -45,48 +44,49 @@ type UsersApi =
     :<|> Auth '[SA.BasicAuth] AuthenticatedUser :> "changePwd" :> ReqBody '[JSON] User.ChangePassword :> Post '[JSON] NoContent
   )
 
-server :: Db.Handle -> SAS.JWTSettings -> Server UsersApi
-server dbHandle jwtSettings = hoistServerWithAuth (Proxy :: Proxy UsersApi) toHandle userHandlers
+serverT :: ServerT UsersApi DbHandler
+serverT = userHandlers
   where
     userHandlers =
       registerHandler
       :<|> loginHandler
       :<|> changePwdHandler
 
+    registerHandler :: User.Login -> DbHandler JwtToken
     registerHandler login = do
-      userRes <- liftIO $ User.create login
+      userRes <- User.create login
       case userRes of
-        Nothing -> SAS.throwAll err500
+        Nothing -> liftHandler $ throwError err500
         Just user -> do
           liftIO $ putStrLn $ "registering user " ++ show user
-          Db.insertUser user
           returnJwtFor (AUser $ User.userName user)
 
+    loginHandler :: SAS.AuthResult AuthenticatedUser -> DbHandler JwtToken
     loginHandler (SAS.Authenticated user) = do
       liftIO $ putStrLn $ "user " ++ show user ++ " logged in"
       returnJwtFor user
-    loginHandler _ = SAS.throwAll err401
+    loginHandler _ = liftHandler $ throwError err401
 
+    changePwdHandler :: (SAS.AuthResult AuthenticatedUser) -> User.ChangePassword -> DbHandler NoContent
     changePwdHandler (SAS.Authenticated authUser) User.ChangePassword{..} = do
       let userName = auName authUser
-      foundUser <- Db.getUser userName
+      foundUser <- User.get userName
       case foundUser of
         Just user | User.validatePassword user oldPassword -> do
-          createRes <- User.create (User.Login userName newPassword)
+          createRes <- liftIO $ User.createIO (User.Login userName newPassword)
           case createRes of
             Just changedUser -> do
-              Db.updateUser userName changedUser
+              User.update userName changedUser
               liftIO $ putStrLn $ "user " ++ show user ++ " changed password"
               pure NoContent
-            Nothing -> SAS.throwAll err500
-        _ -> SAS.throwAll err500
-    changePwdHandler _ _ = SAS.throwAll err401
+            Nothing -> liftHandler $ throwError err500
+        _ -> liftHandler $ throwError err500
+    changePwdHandler _ _ = liftHandler $ throwError err401
 
+    returnJwtFor :: AuthenticatedUser -> DbHandler JwtToken
     returnJwtFor user = do
+      jwtSettings <- getJwtSettings
       jwtRes <- liftIO $ SAS.makeJWT user jwtSettings Nothing
       case jwtRes of
-        Left _ -> SAS.throwAll err500
+        Left _ -> liftHandler $ throwError err500
         Right jwt -> pure $ JwtToken $ decodeUtf8 $ BSL.toStrict jwt
-
-    toHandle :: ReaderT Db.Handle Handler a -> Handler a
-    toHandle r = runReaderT r dbHandle

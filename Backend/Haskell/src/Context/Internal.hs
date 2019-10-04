@@ -7,7 +7,9 @@ module Context.Internal
   ) where
 
 import qualified Db.Internal as Db
+import qualified Servant.Auth.Server as SAS
 
 data Context = Context
   { contextDbHandle :: Db.Handle
+  , contextJwtSettings :: SAS.JWTSettings
   }

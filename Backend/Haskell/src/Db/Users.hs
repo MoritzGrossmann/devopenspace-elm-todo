@@ -1,3 +1,7 @@
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings, FlexibleContexts, RecordWildCards #-}
 
 module Db.Users
@@ -7,16 +11,39 @@ module Db.Users
   , insertUser
   , deleteUser
   , updateUser
+  , UsersTag
+  , runUserActionDb
   ) where
 
+import           Context.Internal
+import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
+import           Control.Effect.Reader (Reader)
 import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader (MonadReader)
 import           Data.Maybe (listToMaybe)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
+import           Db.Carrier (ActionDbCarrier(..), liftDb)
 import           Db.Internal
+import           Imports
 import           Models.User
 
+data UsersTag
+
+runUserActionDb :: ActionDbCarrier UsersTag m a -> m a
+runUserActionDb = runActionDbCarrier
+
+instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
+  => Carrier(UserAction :+: sig) (ActionDbCarrier UsersTag m) where
+  eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
+  eff (L (Get userName k)) =
+    liftDb (getUser userName) >>= k
+  eff (L (Insert user k)) =
+    liftDb (insertUser user) >> k
+  eff (L (Update userName user k)) =
+    liftDb (updateUser userName user) >> k
+  eff (L (Delete userName k)) =
+    liftDb (deleteUser userName) >> k
 
 createTables :: (MonadReader Handle m, MonadIO m) => m ()
 createTables = useHandle $ \conn ->
