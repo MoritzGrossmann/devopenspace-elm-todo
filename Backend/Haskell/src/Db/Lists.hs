@@ -1,4 +1,13 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, 
+             FlexibleContexts, 
+             ScopedTypeVariables, 
+             GeneralizedNewtypeDeriving,
+             TypeFamilies,
+             TypeOperators,
+             FlexibleInstances,
+             MultiParamTypeClasses,
+             UndecidableInstances
+#-}
 
 module Db.Lists
   ( ListId
@@ -10,18 +19,56 @@ module Db.Lists
   , insertList
   , deleteList
   , modifyList
+  , ListActionDbCarrier
+  , runListActionDb
   ) where
 
-import           Control.Monad.IO.Class (MonadIO)
+import           Imports
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (MonadReader)
+import qualified Control.Monad.Reader as MR
 import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
 import           Db.Internal
-import           Models.Lists
+import           Models.Lists (ListAction(..), ListId(..), List(..))
+import qualified Models.Lists as L
 import           Models.User (UserName)
+import           Control.Effect (runM, run, LiftC)
+import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible, inj)
+import           Control.Effect.Reader (Reader)
+import qualified Control.Effect.Reader as R
 
+
+newtype ListActionDbCarrier m a
+  = ListActionDbCarrier { runListActionDbCarrier :: m a }
+  deriving (Functor, Applicative, Monad, MonadIO)
+
+runListActionDb :: ListActionDbCarrier m a -> m a
+runListActionDb = runListActionDbCarrier
+
+test :: Handle -> ListActionDbCarrier (R.ReaderC Handle (LiftC m)) a -> m a
+test dbHandle = runM . R.runReader dbHandle . runListActionDb
+
+testAction :: Has ListAction sig m => m Bool
+testAction = L.exists "Carsten" (ListId 4)
+
+instance (Carrier sig m, MonadIO m, Has (Reader Handle) sig m)
+  => Carrier (ListAction :+: sig) (ListActionDbCarrier m) where
+  eff (R other) = ListActionDbCarrier (eff $ handleCoercible other)
+  eff (L (Exists userName listId k)) =
+    liftDb (listExists userName listId) >>= k
+  eff (L (GetOne userName listId k)) =
+    liftDb (getList userName listId) >>= k
+  eff (L (GetAll userName k)) =
+    liftDb (listLists userName) >>= k
+  eff (L (Create userName text k)) =
+    liftDb (insertList userName text) >>= k
+  eff (L (Delete userName listId k)) =
+    liftDb (deleteList userName listId) >> k
+  eff (L (Modify userName list k)) =
+    liftDb (modifyList userName list) >> k
 
 createTables :: (MonadReader Handle m, MonadIO m) => m ()
 createTables = useHandle $ \conn ->

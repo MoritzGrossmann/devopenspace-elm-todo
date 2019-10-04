@@ -25,6 +25,7 @@ library
                      , Db.Lists
                      , Db.Tasks
                      , Db.Users
+                     , Imports
                      , Models.ListId
                      , Models.Lists
                      , Models.Tasks
@@ -37,6 +38,7 @@ library
                      , blaze-html
                      , blaze-markup
                      , bytestring
+                     , fused-effects
                      , jose
                      , mtl
                      , scientific
@@ -51,6 +53,7 @@ library
                      , sqlite-simple
                      , stm
                      , text
+                     , transformers
                      , wai
                      , wai-cors
                      , warp
