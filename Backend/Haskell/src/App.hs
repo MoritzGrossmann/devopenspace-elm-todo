@@ -10,7 +10,6 @@ module App
     , app
     ) where
 
-import qualified Authentication as Auth
 import           Api.ListsApi (ListsApi)
 import qualified Api.ListsApi as ListsApi
 import           Api.RouteApi (RouteApi)
@@ -19,12 +18,14 @@ import           Api.TodosApi (TodosApi)
 import qualified Api.TodosApi as TodosApi
 import           Api.UsersApi (UsersApi)
 import qualified Api.UsersApi as UsersApi
+import qualified Authentication as Auth
+import           Context
 import qualified Db
 import           Network.Wai (Application)
 import           Network.Wai.Handler.Warp (run)
 import           Network.Wai.Middleware.Cors
 import qualified Page
-import           Servant
+import           Servant hiding (Context)
 import qualified Servant.Auth.Server as SAS
 import           Servant.Auth.Swagger ()
 import qualified Servant.Swagger as Sw
@@ -39,8 +40,10 @@ startApp settingsPath = do
   putStrLn $ "initializing Database in " ++ databasePath
   dbHandle <- Db.initDb databasePath
 
+  let context = Context dbHandle
+
   putStrLn $ "starting Server on " ++ show serverPort
-  run serverPort $ app dbHandle (toPageConfig settings) (Auth.toSettings authConfig)
+  run serverPort $ app context (toPageConfig settings) (Auth.toSettings authConfig)
 
 
 -- prefix APIs with "api/"
@@ -49,14 +52,15 @@ type WebProxy = RouteApi
 type API = SwUI.SwaggerSchemaUI "swagger-ui" "swagger.json" :<|> ApiProxy :<|> WebProxy
 
 
-app :: Db.Handle -> Page.Config -> SAS.JWTSettings -> Application
-app dbHandle pageConfig jwtSettings = myCors $ do
-  let authCfg = Auth.authCheck dbHandle
+app :: Context -> Page.Config -> SAS.JWTSettings -> Application
+app context pageConfig jwtSettings = myCors $ do
+  let dbHandle = contextDbHandle context
+      authCfg = Auth.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
   Servant.serveWithContext (Proxy :: Proxy API) cfg $
     SwUI.swaggerSchemaUIServer swaggerDoc
     :<|> (UsersApi.server dbHandle jwtSettings
-    :<|> (Auth.hoistServerWithAuth (Proxy :: Proxy ListsApi) (Db.handleWithDb dbHandle) ListsApi.serverT)
+    :<|> (Auth.hoistServerWithAuth (Proxy :: Proxy ListsApi) (Db.handleWithContext context) ListsApi.serverT)
     :<|> TodosApi.server dbHandle)
     :<|> RouteApi.server pageConfig
   where

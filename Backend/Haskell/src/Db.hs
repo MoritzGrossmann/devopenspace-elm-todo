@@ -7,8 +7,9 @@ module Db
   , initDb
   , useHandle
   , DbHandler
-  , handleWithDb
+  , handleWithContext
   , runActionDb
+  , liftDb
   ) where
 
 import           Control.Concurrent.MVar (newMVar)

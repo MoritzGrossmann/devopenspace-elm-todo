@@ -21,6 +21,7 @@ module Db.Lists
   , modifyList
   ) where
 
+import           Context.Internal
 import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
 import           Control.Effect.Reader (Reader)
 import           Control.Monad.IO.Class (MonadIO)
@@ -29,14 +30,14 @@ import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
-import           Db.Carrier (ActionDbCarrier(..))
+import           Db.Carrier (ActionDbCarrier(..), liftDb)
 import           Db.Internal
 import           Imports
 import           Models.Lists (ListAction(..), ListId(..), List(..))
 import           Models.User (UserName)
 
 
-instance (Carrier sig m, MonadIO m, Has (Reader Handle) sig m)
+instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
   => Carrier (ListAction :+: sig) (ActionDbCarrier m) where
   eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
   eff (L (Exists userName listId k)) =
@@ -101,8 +102,8 @@ deleteList userName lId = useHandle $ \conn ->
   Sql.execute conn "DELETE FROM lists WHERE rowid=? AND user=?" (lId, userName)
 
 
-modifyList :: (MonadReader Handle m, MonadIO m) => UserName -> List -> m ()
+modifyList:: (MonadReader Handle m, MonadIO m) => UserName -> List -> m ()
 modifyList userName (List lId ln _) = useHandle $ \conn ->
-  Sql.executeNamed conn 
+  Sql.executeNamed conn
     "UPDATE lists SET name = :name WHERE rowid = :id AND user = :user" 
     [":id" := lId, ":user" := userName, ":name" := ln]
