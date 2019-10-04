@@ -21,23 +21,32 @@ module Db.Lists
   , modifyList
   , ListActionDbCarrier
   , runListActionDb
+  , ListHandler
+  , handleWithDb
   ) where
 
-import           Imports
+import           Control.Effect (LiftC, runM)
+import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
+import           Control.Effect.Reader (Reader, ReaderC, runReader)
 import           Control.Monad.IO.Class (MonadIO)
-import           Control.Monad.Trans.Class (MonadTrans)
 import           Control.Monad.Reader (MonadReader)
 import qualified Control.Monad.Reader as MR
+import           Control.Monad.Trans.Class (MonadTrans)
 import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
 import           Db.Internal
+import           Imports
 import           Models.Lists (ListAction(..), ListId(..), List(..))
 import           Models.User (UserName)
-import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
-import           Control.Effect.Reader (Reader)
+import           Servant (Handler)
 
+
+type ListHandler = ListActionDbCarrier (ReaderC Handle (LiftC Handler))
+
+handleWithDb :: Handle -> ListHandler a -> Handler a
+handleWithDb dbHandle = runM . runReader dbHandle . runListActionDb
 
 newtype ListActionDbCarrier m a
   = ListActionDbCarrier { runListActionDbCarrier :: m a }

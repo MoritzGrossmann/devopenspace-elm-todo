@@ -11,21 +11,20 @@
 
 module Api.ListsApi
     ( ListsApi
-    , server
+    , serverT
+    , Db.handleWithDb
     ) where
 
 
-import           GHC.Generics
-import           Authentication (AuthenticatedUser (..), hoistServerWithAuth)
-import           Control.Effect (runM, LiftC)
-import           Control.Monad.Trans.Class (lift)
-import qualified Control.Effect.Reader as R
+import           Authentication (AuthenticatedUser (..))
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Trans.Class (lift)
 import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
-import qualified Db
+import           Db.Lists (ListHandler)
 import qualified Db.Lists as Db
+import           GHC.Generics
 import qualified Models.Lists as L
 import           Models.User (UserName)
 import           Servant
@@ -47,11 +46,8 @@ type ListsApi =
     :<|> Capture "id" L.ListId :> Get '[JSON] L.List
   )
 
-type ListHandler a = Db.ListActionDbCarrier (R.ReaderC Db.Handle (LiftC Handler)) a
-
-
-server :: Db.Handle -> Server ListsApi
-server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) actionToHandler listsHandlers
+serverT :: ServerT ListsApi ListHandler
+serverT = listsHandlers
   where
     listsHandlers (SAS.Authenticated user) =
       getAllHandler userName
@@ -100,13 +96,11 @@ server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) actionToHandler 
         Nothing -> liftHandler $ throwError notFound
         Just list -> return list
 
-    actionToHandler :: ListHandler a -> Handler a
-    actionToHandler = runM . R.runReader dbHandle . Db.runListActionDb
-
     liftHandler :: Handler a -> ListHandler a
     liftHandler = lift . lift . lift
 
     throwErr401 = liftHandler $ throwError err401
+
 
 notFound :: ServerError
 notFound = err404 { errBody = "sorry - don't know this list" }

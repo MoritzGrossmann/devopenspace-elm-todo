@@ -56,7 +56,7 @@ app dbHandle pageConfig jwtSettings = myCors $ do
   Servant.serveWithContext (Proxy :: Proxy API) cfg $
     SwUI.swaggerSchemaUIServer swaggerDoc
     :<|> (UsersApi.server dbHandle jwtSettings
-    :<|> ListsApi.server dbHandle
+    :<|> (Auth.hoistServerWithAuth (Proxy :: Proxy ListsApi) (ListsApi.handleWithDb dbHandle) ListsApi.serverT)
     :<|> TodosApi.server dbHandle)
     :<|> RouteApi.server pageConfig
   where
