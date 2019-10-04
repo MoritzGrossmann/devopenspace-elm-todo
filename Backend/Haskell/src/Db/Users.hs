@@ -36,12 +36,27 @@ runUserActionDb = runActionDbCarrier
 instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
   => Carrier(UserAction :+: sig) (ActionDbCarrier UsersTag m) where
   eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
+  eff (L (Register login k)) = k =<< (liftDb $ do
+    userRes <- createIO login
+    case userRes of
+      Nothing -> pure Nothing
+      Just user -> do
+        insertUser user
+        pure $ Just user)
+  eff (L (UpdatePassword userName ChangePassword{..} k)) = k =<< (liftDb $ do
+      foundUser <- getUser userName
+      case foundUser of
+        Nothing -> pure ChPwdInvalidUser
+        Just user | not (validatePassword user oldPassword) -> pure ChPwdInvalidPassword
+        Just _ -> do
+          createRes <- createIO (Login userName newPassword)
+          case createRes of
+            Just changedUser -> do
+              updateUser userName changedUser
+              pure ChPwdSuccess
+            Nothing -> pure ChPwdInternalError)
   eff (L (Get userName k)) =
     liftDb (getUser userName) >>= k
-  eff (L (Insert user k)) =
-    liftDb (insertUser user) >> k
-  eff (L (Update userName user k)) =
-    liftDb (updateUser userName user) >> k
   eff (L (Delete userName k)) =
     liftDb (deleteUser userName) >> k
 
@@ -71,4 +86,4 @@ deleteUser userName = useHandle $ \conn ->
 
 updateUser :: (MonadReader Handle m, MonadIO m) => UserName -> User -> m ()
 updateUser oldName User{..} = useHandle $ \conn ->
-  Sql.executeNamed conn "UPDATE user SET name = :name, pwHash = :hash WHERE user = :oldName" [":oldName" := oldName, ":name" := userName, ":hash" := userPwHash]
+  Sql.executeNamed conn "UPDATE users SET name = :name, pwHash = :hash WHERE name = :oldName" [":oldName" := oldName, ":name" := userName, ":hash" := userPwHash]

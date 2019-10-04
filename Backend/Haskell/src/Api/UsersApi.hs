@@ -40,8 +40,8 @@ instance ToSchema NoContent
 type UsersApi =
   "user" :> (
     "register" :> ReqBody '[JSON] User.Login :> Post '[JSON] JwtToken
-    :<|> Auth '[SA.BasicAuth] AuthenticatedUser :> "login" :> Get '[JSON] JwtToken
-    :<|> Auth '[SA.BasicAuth] AuthenticatedUser :> "changePwd" :> ReqBody '[JSON] User.ChangePassword :> Post '[JSON] NoContent
+    :<|> Auth '[SA.BasicAuth, SA.JWT] AuthenticatedUser :> "login" :> Get '[JSON] JwtToken
+    :<|> Auth '[SA.BasicAuth, SA.JWT] AuthenticatedUser :> "changePwd" :> ReqBody '[JSON] User.ChangePassword :> Post '[JSON] NoContent
   )
 
 serverT :: ServerT UsersApi DbHandler
@@ -54,8 +54,8 @@ serverT = userHandlers
 
     registerHandler :: User.Login -> DbHandler JwtToken
     registerHandler login = do
-      userRes <- User.create login
-      case userRes of
+      registerRes <- User.register login
+      case registerRes of
         Nothing -> liftHandler $ throwError err500
         Just user -> do
           liftIO $ putStrLn $ "registering user " ++ show user
@@ -68,19 +68,22 @@ serverT = userHandlers
     loginHandler _ = liftHandler $ throwError err401
 
     changePwdHandler :: (SAS.AuthResult AuthenticatedUser) -> User.ChangePassword -> DbHandler NoContent
-    changePwdHandler (SAS.Authenticated authUser) User.ChangePassword{..} = do
+    changePwdHandler (SAS.Authenticated authUser) pwdChange = do
       let userName = auName authUser
-      foundUser <- User.get userName
-      case foundUser of
-        Just user | User.validatePassword user oldPassword -> do
-          createRes <- liftIO $ User.createIO (User.Login userName newPassword)
-          case createRes of
-            Just changedUser -> do
-              User.update userName changedUser
-              liftIO $ putStrLn $ "user " ++ show user ++ " changed password"
-              pure NoContent
-            Nothing -> liftHandler $ throwError err500
-        _ -> liftHandler $ throwError err500
+      changeRes <- User.changePassword userName pwdChange
+      case changeRes of
+        User.ChPwdSuccess -> do
+          liftIO $ putStrLn $ "user " ++ show userName ++ " changed password"
+          pure NoContent
+        User.ChPwdInvalidUser -> do
+          liftIO $ putStrLn $ "failed to change password for user " ++ show userName ++ ": user not found"
+          liftHandler $ throwError err400
+        User.ChPwdInvalidPassword -> do
+          liftIO $ putStrLn $ "failed to change password for user " ++ show userName ++ ": invalid password"
+          liftHandler $ throwError err400
+        User.ChPwdInternalError -> do
+          liftIO $ putStrLn $ "failed to change password for user " ++ show userName ++ ": could not hash password"
+          liftHandler $ throwError err500
     changePwdHandler _ _ = liftHandler $ throwError err401
 
     returnJwtFor :: AuthenticatedUser -> DbHandler JwtToken

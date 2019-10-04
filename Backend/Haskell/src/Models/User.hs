@@ -4,12 +4,13 @@
 module Models.User
   ( Login (..)
   , ChangePassword (..)
+  , ChangePasswordResult (..)
   , User (..)
   , UserName
   , UserAction (..)
+  , register
+  , changePassword
   , get
-  , create
-  , update
   , delete
   , createIO
   , validate
@@ -53,6 +54,13 @@ instance ToSchema ChangePassword
 instance ToParamSchema ChangePassword where
   toParamSchema _ = mempty
 
+
+data ChangePasswordResult
+  = ChPwdSuccess
+  | ChPwdInvalidUser
+  | ChPwdInvalidPassword
+  | ChPwdInternalError
+
 data User = User
   { userName   :: UserName
   , userPwHash :: ByteString
@@ -60,8 +68,8 @@ data User = User
 
 data UserAction m k
   = Get UserName (Maybe User -> m k)
-  | Insert User (m k)
-  | Update UserName User (m k)
+  | Register Login (Maybe User -> m k)
+  | UpdatePassword UserName ChangePassword (ChangePasswordResult -> m k)
   | Delete UserName (m k)
   deriving (Functor, Generic1)
 
@@ -71,21 +79,14 @@ instance Effect UserAction
 get :: Has UserAction sig m => UserName -> m (Maybe User)
 get userName = send (Get userName pure)
 
-create :: (MonadIO m, Has UserAction sig m) => Login -> m (Maybe User)
-create login = do
-  user' <- liftIO $ createIO login
-  case user' of
-    Just user -> do
-      send (Insert user (pure ()))
-      pure (Just user)
-    Nothing -> pure Nothing
+register :: Has UserAction sig m => Login -> m (Maybe User)
+register login = send (Register login pure)
 
-update :: Has UserAction sig m => UserName -> User -> m ()
-update userName user = send (Update userName user (pure ()))
+changePassword :: Has UserAction sig m => UserName -> ChangePassword -> m ChangePasswordResult
+changePassword userName pwChange = send (UpdatePassword userName pwChange pure)
 
 delete :: Has UserAction sig m => UserName -> m ()
 delete userName = send (Delete userName (pure ()))
-
 
 createIO :: MonadIO m => Login -> m (Maybe User)
 createIO Login{..} =
