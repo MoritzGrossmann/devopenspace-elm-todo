@@ -24,7 +24,8 @@ module Db.Lists
   ) where
 
 import           Imports
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.IO.Class (MonadIO)
+import           Control.Monad.Trans.Class (MonadTrans)
 import           Control.Monad.Reader (MonadReader)
 import qualified Control.Monad.Reader as MR
 import           Data.Maybe (listToMaybe)
@@ -33,26 +34,20 @@ import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
 import           Db.Internal
 import           Models.Lists (ListAction(..), ListId(..), List(..))
-import qualified Models.Lists as L
 import           Models.User (UserName)
-import           Control.Effect (runM, run, LiftC)
-import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible, inj)
+import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
 import           Control.Effect.Reader (Reader)
-import qualified Control.Effect.Reader as R
 
 
 newtype ListActionDbCarrier m a
   = ListActionDbCarrier { runListActionDbCarrier :: m a }
   deriving (Functor, Applicative, Monad, MonadIO)
 
+instance MonadTrans ListActionDbCarrier where
+  lift m = ListActionDbCarrier m
+
 runListActionDb :: ListActionDbCarrier m a -> m a
 runListActionDb = runListActionDbCarrier
-
-test :: Handle -> ListActionDbCarrier (R.ReaderC Handle (LiftC m)) a -> m a
-test dbHandle = runM . R.runReader dbHandle . runListActionDb
-
-testAction :: Has ListAction sig m => m Bool
-testAction = L.exists "Carsten" (ListId 4)
 
 instance (Carrier sig m, MonadIO m, Has (Reader Handle) sig m)
   => Carrier (ListAction :+: sig) (ListActionDbCarrier m) where
