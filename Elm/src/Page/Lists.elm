@@ -7,6 +7,7 @@ import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Models.TaskList as TaskList exposing (TaskList)
+import Models.TaskLists as TaskLists exposing (TaskLists)
 import Models.Tasks exposing (Filter(..))
 import Page
 import RemoteData exposing (WebData)
@@ -20,7 +21,7 @@ type alias Page msg =
 
 type alias Model =
     { session : Session
-    , lists : WebData (Dict Int TaskList)
+    , lists : WebData TaskLists
     , neueListe : String
     }
 
@@ -52,7 +53,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ListResult (Ok lists) ->
-            ( { model | lists = RemoteData.Success (lists |> listToDict) }, Cmd.none )
+            ( { model | lists = RemoteData.Success (TaskLists.fromList lists) }, Cmd.none )
 
         ListResult (Err httpError) ->
             case httpError of
@@ -71,7 +72,9 @@ update msg model =
         NeueListeResult (Ok liste) ->
             ( { model
                 | neueListe = ""
-                , lists = model.lists |> RemoteData.map (\listen -> RemoteData.Success (listen |> Dict.insert (TaskList.idToInt liste.id) liste)) |> RemoteData.withDefault model.lists
+                , lists =
+                    model.lists
+                        |> RemoteData.map (TaskLists.insertTaskList liste)
               }
             , Cmd.none
             )
@@ -83,7 +86,13 @@ update msg model =
             ( model, Api.Lists.delete model.session (DeleteListResult id) id )
 
         DeleteListResult id (Ok _) ->
-            ( { model | lists = model.lists |> RemoteData.map (Dict.remove (TaskList.idToInt id)) }, Cmd.none )
+            ( { model
+                | lists =
+                    model.lists
+                        |> RemoteData.map (TaskLists.deleteTaskList id)
+              }
+            , Cmd.none
+            )
 
         DeleteListResult _ (Err _) ->
             ( model, Cmd.none )
@@ -109,7 +118,7 @@ view model =
             [ Attr.class "todo-list" ]
             (model.lists
                 |> RemoteData.map
-                    (\dict -> dict |> Dict.toList |> List.map (\( _, m ) -> viewListItem model.session m))
+                    (TaskLists.allTaskLists >> List.map (viewListItem model.session))
                 |> RemoteData.withDefault []
             )
         ]
