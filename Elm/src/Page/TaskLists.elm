@@ -1,4 +1,4 @@
-module Page.Lists exposing (Model, Msg, init, subscriptions, update, view)
+module Page.TaskLists exposing (Model, Msg, init, subscriptions, update, view)
 
 import Api.Lists
 import Dict exposing (Dict)

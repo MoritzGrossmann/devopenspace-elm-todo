@@ -3,10 +3,10 @@ module Main exposing (main)
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
-import Page.List as ListPage
-import Page.Lists as ListsPage
 import Page.Login as LoginPage
 import Page.LoginPending as LoginPending
+import Page.TaskList as TaskListPage
+import Page.TaskLists as TaskListsPage
 import Routes exposing (Route)
 import Session exposing (Login(..), Session, getNavKey)
 import Url exposing (Url)
@@ -59,8 +59,8 @@ init flags location key =
 type Model
     = Login (LoginPage.Model Msg)
     | LoginPending (LoginPending.Model Msg)
-    | List (ListPage.Model Msg)
-    | Lists (ListsPage.Model Msg)
+    | List (TaskListPage.Model Msg)
+    | Lists (TaskListsPage.Model Msg)
 
 
 type Msg
@@ -68,8 +68,8 @@ type Msg
     | UrlChanged Url
     | LoginMsg LoginPage.Msg
     | LoginPendingMsg LoginPending.Msg
-    | ListMsg ListPage.Msg
-    | ListsMsg ListsPage.Msg
+    | ListMsg TaskListPage.Msg
+    | ListsMsg TaskListsPage.Msg
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
@@ -93,14 +93,14 @@ initPage session route =
             Routes.List listId filter ->
                 let
                     ( pageModel, pageCmd ) =
-                        ListPage.init ListMsg session filter listId
+                        TaskListPage.init ListMsg session filter listId
                 in
                 ( List pageModel, pageCmd )
 
             Routes.Lists ->
                 let
                     ( pageModel, pageCmd ) =
-                        ListsPage.init ListsMsg session
+                        TaskListsPage.init ListsMsg session
                 in
                 ( Lists pageModel, pageCmd )
 
@@ -179,13 +179,13 @@ updateLoginPending msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateList : ListPage.Msg -> Model -> ( Model, Cmd Msg )
+updateList : TaskListPage.Msg -> Model -> ( Model, Cmd Msg )
 updateList msg pageModel =
     case pageModel of
         List listModel ->
             let
                 ( newListModel, cmd ) =
-                    ListPage.update msg listModel
+                    TaskListPage.update msg listModel
             in
             ( List newListModel, cmd )
 
@@ -193,13 +193,13 @@ updateList msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateLists : ListsPage.Msg -> Model -> ( Model, Cmd Msg )
+updateLists : TaskListsPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLists msg pageModel =
     case pageModel of
         Lists listsModel ->
             let
                 ( newListsModel, cmd ) =
-                    ListsPage.update msg listsModel
+                    TaskListsPage.update msg listsModel
             in
             ( Lists newListsModel, cmd )
 
@@ -213,13 +213,13 @@ view model =
         page =
             case model of
                 List listModel ->
-                    ListPage.view listModel
+                    TaskListPage.view listModel
 
                 Login loginModel ->
                     LoginPage.view loginModel
 
                 Lists listsModel ->
-                    ListsPage.view listsModel
+                    TaskListsPage.view listsModel
 
                 LoginPending loginPendingModel ->
                     LoginPending.view loginPendingModel
@@ -233,13 +233,13 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     case model of
         List listModel ->
-            ListPage.subscriptions listModel
+            TaskListPage.subscriptions listModel
 
         Login loginModel ->
             LoginPage.subscriptions loginModel
 
         Lists listsModel ->
-            ListsPage.subscriptions listsModel
+            TaskListsPage.subscriptions listsModel
 
         LoginPending loginPendingModel ->
             LoginPending.subscriptions loginPendingModel
