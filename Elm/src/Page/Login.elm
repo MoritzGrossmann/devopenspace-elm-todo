@@ -17,7 +17,6 @@ import Html.Events as Ev
 import Http
 import Json.Encode as Enc
 import LocalStorage
-import Page
 import RemoteData exposing (WebData)
 import Routes exposing (Route)
 import Session exposing (Login(..), Session)

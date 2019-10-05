@@ -3,7 +3,6 @@ module Main exposing (main)
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
-import Page
 import Page.List as ListPage
 import Page.Lists as ListsPage
 import Page.Login as LoginPage

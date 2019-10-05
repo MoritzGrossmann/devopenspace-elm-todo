@@ -9,7 +9,6 @@ import Http
 import Models.TaskList as TaskList exposing (TaskList)
 import Models.TaskLists as TaskLists exposing (TaskLists)
 import Models.Tasks exposing (Filter(..))
-import Page
 import RemoteData exposing (WebData)
 import Routes
 import Session exposing (Session)
