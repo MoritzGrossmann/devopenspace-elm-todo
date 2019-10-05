@@ -35,8 +35,7 @@ import qualified Db.Users as Db
 import           GHC.Generics
 import qualified Models.User as User
 import           Servant
-import qualified Servant.Auth as SA
-import           Servant.Auth.Server (Auth, ToJWT, FromJWT, AuthResult, FromBasicAuthData, BasicAuthCfg)
+import           Servant.Auth.Server (ToJWT, FromJWT, AuthResult, FromBasicAuthData, BasicAuthCfg)
 import qualified Servant.Auth.Server as SAS
 
 -- Authentication CONFIG

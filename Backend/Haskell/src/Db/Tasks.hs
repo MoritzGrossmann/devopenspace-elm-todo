@@ -1,3 +1,7 @@
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
 
 module Db.Tasks
@@ -9,19 +13,45 @@ module Db.Tasks
   , insertTask
   , deleteTask
   , modifyTask
+  , TaskAction (..)
+  , TasksTag
+  , runTasksActionDb
   ) where
 
-import           Control.Monad.IO.Class (MonadIO)
+import           Context.Internal
+import           Control.Effect.Reader (Reader)
 import           Control.Monad.Reader (MonadReader)
 import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
+import           Db.Carrier (ActionDbCarrier(..), liftDb)
 import           Db.Internal
+import qualified Db.Lists as DbL
+import           Imports
 import           Models.ListId
 import           Models.Tasks
 import           Models.User (UserName)
 
+
+data TasksTag
+
+runTasksActionDb :: ActionDbCarrier TasksTag m a -> m a
+runTasksActionDb = runActionDbCarrier
+
+instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
+  => Carrier (TaskAction :+: sig) (ActionDbCarrier TasksTag m) where
+  eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
+  eff (L (CheckAccess userName lId k)) = k =<< (liftDb $ DbL.listExists userName lId)
+  eff (L (Get userName taskId k)) = k =<< (liftDb $ getTask userName taskId)
+  eff (L (List userName lId k)) = k =<< (liftDb $ listTasks userName lId)
+  eff (L (Create userName lId taskText k)) = k =<< (liftDb $ insertTask userName lId taskText)
+  eff (L (Delete userName taskId k)) = k =<< (liftDb $ do
+    deleteTask userName taskId
+    pure True )
+  eff (L (Update userName taskId task k)) = k =<< (liftDb $ do
+    modifyTask userName taskId task
+    pure True )
 
 createTables :: (MonadReader Handle m, MonadIO m) => m ()
 createTables = useHandle $ \conn ->
@@ -60,8 +90,8 @@ deleteTask userName tId = useHandle $ \conn ->
   Sql.execute conn "DELETE FROM todos WHERE rowid=? AND user=?" (tId, userName)
 
 
-modifyTask :: (MonadReader Handle m, MonadIO m) => UserName -> Task -> m ()
-modifyTask userName (Task tId _ txt fin) = useHandle $ \conn ->
-  Sql.executeNamed conn 
-    "UPDATE todos SET task = :task, finished = :finished WHERE rowid = :id AND user = :user" 
+modifyTask :: (MonadReader Handle m, MonadIO m) => UserName -> TaskId -> Task -> m ()
+modifyTask userName tId (Task _ _ txt fin) = useHandle $ \conn ->
+  Sql.executeNamed conn
+    "UPDATE todos SET task = :task, finished = :finished WHERE rowid = :id AND user = :user"
     [":id" := tId, ":user" := userName, ":task" := txt, ":finished" := fin]

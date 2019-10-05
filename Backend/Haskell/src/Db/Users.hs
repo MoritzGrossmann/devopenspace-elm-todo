@@ -1,3 +1,7 @@
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings, FlexibleContexts, RecordWildCards #-}
 
 module Db.Users
@@ -16,7 +20,6 @@ import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
 import           Db.Internal
 import           Models.User
-
 
 createTables :: (MonadReader Handle m, MonadIO m) => m ()
 createTables = useHandle $ \conn ->
@@ -44,4 +47,4 @@ deleteUser userName = useHandle $ \conn ->
 
 updateUser :: (MonadReader Handle m, MonadIO m) => UserName -> User -> m ()
 updateUser oldName User{..} = useHandle $ \conn ->
-  Sql.executeNamed conn "UPDATE user SET name = :name, pwHash = :hash WHERE user = :oldName" [":oldName" := oldName, ":name" := userName, ":hash" := userPwHash]
+  Sql.executeNamed conn "UPDATE users SET name = :name, pwHash = :hash WHERE name = :oldName" [":oldName" := oldName, ":name" := userName, ":hash" := userPwHash]

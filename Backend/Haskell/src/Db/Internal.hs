@@ -1,4 +1,7 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts,
+             TypeApplications,
+             TypeFamilies
+#-}
 
 module Db.Internal
   ( Handle (..)
@@ -13,9 +16,8 @@ import           Control.Monad.Reader (MonadReader, ask)
 import qualified Database.SQLite.Simple as Sql
 
 
-newtype Handle = 
+newtype Handle =
   Handle (MVar FilePath)
-
 
 useHandle :: (MonadReader Handle m, MonadIO m) => (Sql.Connection -> IO a) -> m a
 useHandle m = do
@@ -25,7 +27,7 @@ useHandle m = do
 
 useHandle' :: MonadIO m => Handle -> (Sql.Connection -> IO a) -> m a
 useHandle' (Handle dbFile) m = liftIO $
-  bracket 
+  bracket
     (takeMVar dbFile)
     (putMVar dbFile)
     (`Sql.withConnection` m)

@@ -1,4 +1,13 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, 
+             FlexibleContexts, 
+             ScopedTypeVariables, 
+             GeneralizedNewtypeDeriving,
+             TypeFamilies,
+             TypeOperators,
+             FlexibleInstances,
+             MultiParamTypeClasses,
+             UndecidableInstances
+#-}
 
 module Db.Lists
   ( ListId
@@ -10,18 +19,46 @@ module Db.Lists
   , insertList
   , deleteList
   , modifyList
+  , ListsTag
+  , runListsActionDb
   ) where
 
+import           Context.Internal
+import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
+import           Control.Effect.Reader (Reader)
 import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader (MonadReader)
 import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
+import           Db.Carrier (ActionDbCarrier(..), liftDb)
 import           Db.Internal
-import           Models.Lists
+import           Imports
+import           Models.Lists (ListAction(..), ListId(..), List(..))
 import           Models.User (UserName)
 
+
+data ListsTag
+
+runListsActionDb :: ActionDbCarrier ListsTag m a -> m a
+runListsActionDb = runActionDbCarrier
+
+instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
+  => Carrier (ListAction :+: sig) (ActionDbCarrier ListsTag m) where
+  eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
+  eff (L (Exists userName listId k)) =
+    liftDb (listExists userName listId) >>= k
+  eff (L (GetOne userName listId k)) =
+    liftDb (getList userName listId) >>= k
+  eff (L (GetAll userName k)) =
+    liftDb (listLists userName) >>= k
+  eff (L (Create userName text k)) =
+    liftDb (insertList userName text) >>= k
+  eff (L (Delete userName listId k)) =
+    liftDb (deleteList userName listId) >> k
+  eff (L (Modify userName list k)) =
+    liftDb (modifyList userName list) >> k
 
 createTables :: (MonadReader Handle m, MonadIO m) => m ()
 createTables = useHandle $ \conn ->
@@ -72,8 +109,8 @@ deleteList userName lId = useHandle $ \conn ->
   Sql.execute conn "DELETE FROM lists WHERE rowid=? AND user=?" (lId, userName)
 
 
-modifyList :: (MonadReader Handle m, MonadIO m) => UserName -> List -> m ()
+modifyList:: (MonadReader Handle m, MonadIO m) => UserName -> List -> m ()
 modifyList userName (List lId ln _) = useHandle $ \conn ->
-  Sql.executeNamed conn 
+  Sql.executeNamed conn
     "UPDATE lists SET name = :name WHERE rowid = :id AND user = :user" 
     [":id" := lId, ":user" := userName, ":name" := ln]

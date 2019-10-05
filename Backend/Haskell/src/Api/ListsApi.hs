@@ -11,80 +11,89 @@
 
 module Api.ListsApi
     ( ListsApi
-    , server
+    , serverT
     ) where
 
 
-import           GHC.Generics
-import           Authentication (AuthenticatedUser (..), hoistServerWithAuth)
+import           Authentication (AuthenticatedUser (..))
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Reader (ReaderT, runReaderT)
 import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
-import qualified Db
-import qualified Db.Lists as Db
+import           Db (DbHandler, liftHandler)
+import           GHC.Generics
+import qualified Models.Lists as L
+import           Models.User (UserName)
 import           Servant
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
 
-newtype ListName 
+newtype ListName
   = ListName Text
   deriving (Generic, ToJSON, FromJSON, ToSchema)
 
 type ListsApi =
   Auth '[SA.JWT] AuthenticatedUser :>
   "list" :> (
-    Get '[JSON] [Db.List]
-    :<|> ReqBody '[JSON] Db.List :> Put '[JSON] Db.List
-    :<|> ReqBody '[JSON] ListName :> Post '[JSON] Db.List
-    :<|> Capture "id" Db.ListId :> Delete '[JSON] [Db.List]
-    :<|> Capture "id" Db.ListId :> Get '[JSON] Db.List
+    Get '[JSON] [L.List]
+    :<|> ReqBody '[JSON] L.List :> Put '[JSON] L.List
+    :<|> ReqBody '[JSON] ListName :> Post '[JSON] L.List
+    :<|> Capture "id" L.ListId :> Delete '[JSON] [L.List]
+    :<|> Capture "id" L.ListId :> Get '[JSON] L.List
   )
 
-server :: Db.Handle -> Server ListsApi
-server dbHandle = hoistServerWithAuth (Proxy :: Proxy ListsApi) toHandle listsHandlers
+serverT :: ServerT ListsApi DbHandler
+serverT = listsHandlers
   where
     listsHandlers (SAS.Authenticated user) =
       getAllHandler userName
-      :<|> updateHandler userName 
+      :<|> updateHandler userName
       :<|> newHandler userName
       :<|> deleteHandler userName
       :<|> queryHandler userName
       where userName = auName user
-    listsHandlers _ = SAS.throwAll err401
+    listsHandlers _ =
+      throwErr401
+      :<|> (\_ -> throwErr401)
+      :<|> (\_ -> throwErr401)
+      :<|> (\_ -> throwErr401)
+      :<|> (\_ -> throwErr401)
 
+    getAllHandler :: UserName -> DbHandler [L.List]
     getAllHandler =
-      Db.listLists
+      L.getAll
 
+    updateHandler :: UserName -> L.List -> DbHandler L.List
     updateHandler userName list = do
-      liftIO $ putStrLn $ "updating list " ++ show (Db.id list)
-      Db.modifyList userName list
-      found <- Db.getList userName (Db.id list)
+      liftIO $ putStrLn $ "updating list " ++ show (L.id list)
+      L.modify userName list
+      found <- L.getOne userName (L.id list)
       case found of
-        Nothing -> throwError notFound
+        Nothing -> liftHandler $ throwError notFound
         Just l -> return l
 
+    newHandler :: UserName -> ListName -> DbHandler L.List
     newHandler userName (ListName txt) = do
-      list <- Db.insertList userName txt
-      liftIO $ putStrLn $ "created new list - redirecting to " ++ show (Db.id list)
+      list <- L.create userName txt
+      liftIO $ putStrLn $ "created new list - redirecting to " ++ show (L.id list)
       return list
 
+    deleteHandler :: UserName -> L.ListId -> DbHandler [L.List]
     deleteHandler userName lId = do
-      Db.deleteList userName lId
+      L.delete userName lId
       liftIO $ putStrLn $ "deleted list " ++ show lId
-      Db.listLists userName
+      L.getAll userName
 
+    queryHandler :: UserName -> L.ListId -> DbHandler L.List
     queryHandler userName lId = do
       liftIO $ putStrLn $ "getting list " ++ show lId
-      found <- Db.getList userName lId
+      found <- L.getOne userName lId
       case found of
-        Nothing -> throwError notFound
+        Nothing -> liftHandler $ throwError notFound
         Just list -> return list
 
-    toHandle :: ReaderT Db.Handle Handler a -> Handler a
-    toHandle r = runReaderT r dbHandle
+    throwErr401 = liftHandler $ throwError err401
 
 
 notFound :: ServerError
