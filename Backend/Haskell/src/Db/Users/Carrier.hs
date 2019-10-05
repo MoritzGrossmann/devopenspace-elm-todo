@@ -10,9 +10,7 @@ module Db.Users.Carrier
   ) where
 
 import           Context.Internal
-import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
 import           Control.Effect.Reader (Reader)
-import           Control.Monad.IO.Class (MonadIO)
 import           Db.Carrier (ActionDbCarrier(..), liftDb)
 import           Imports
 import           Models.User

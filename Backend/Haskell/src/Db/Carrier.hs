@@ -15,7 +15,6 @@ module Db.Carrier
 import           Context.Internal
 import           Control.Effect.Reader (Reader)
 import qualified Control.Effect.Reader as R
-import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (MonadReader, ReaderT, runReaderT, asks)
 import           Control.Monad.Trans.Class (MonadTrans(..))
 import qualified Database.SQLite.Simple as Sql

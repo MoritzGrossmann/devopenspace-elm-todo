@@ -17,7 +17,6 @@ module Api.UsersApi
 
 import           Authentication
 import           Context (getJwtSettings)
-import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (ToJSON)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Swagger.ParamSchema (ToParamSchema)
@@ -25,10 +24,10 @@ import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import           Data.Text.Encoding (decodeUtf8)
 import           Db (DbHandler, liftHandler)
+import           Imports
 import           Models.User (Login, ChangePassword)
 import qualified Models.User as User
 import qualified Models.User.Effects as User
-import           Servant
 import           Servant.Auth (Auth)
 import qualified Servant.Auth as SA
 import qualified Servant.Auth.Server as SAS

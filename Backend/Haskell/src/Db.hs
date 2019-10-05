@@ -16,7 +16,6 @@ import           Context.Internal
 import           Control.Concurrent.MVar (newMVar)
 import           Control.Effect.Lift (LiftC, runM)
 import           Control.Effect.Reader (ReaderC, runReader)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (runReaderT)
 import           Control.Monad.Trans.Class (lift)
 import           Db.Carrier (ActionDbCarrier, liftDb, runActionDb)
@@ -25,7 +24,7 @@ import qualified Db.Lists as DbLists
 import qualified Db.Tasks as DbTasks
 import qualified Db.Users as DbUsers
 import qualified Db.Users.Carrier as DbUsers
-import           Servant (Handler)
+import           Imports
 
 
 initDb :: MonadIO m => FilePath -> m Handle
