@@ -1,46 +1,39 @@
-module Page.LoginPending exposing (Model, Msg, Page, init, subscriptions, update)
+module Page.LoginPending exposing (Model, Msg, init, subscriptions, update, view)
 
 import Html as H exposing (Html)
 import LocalStorage
-import Page
 import Routes exposing (Route)
 import Session exposing (Session)
 
 
-type alias Page msg =
-    Page.Page msg Model Msg
-
-
-type alias Model =
+type alias Model mainMsg =
     { route : Maybe Route
     , session : Session
+    , map : Msg -> mainMsg
     }
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> Maybe Route -> ( Page msg, Cmd msg )
-init wrap session route =
-    let
-        pageInit _ =
-            ( { session = session
-              , route = route
-              }
-            , LocalStorage.request LocalStorage.authorizationKey
-            )
-    in
-    Page.init wrap pageInit view update subscriptions session
+init : (Msg -> mainMsg) -> Session -> Maybe Route -> ( Model mainMsg, Cmd mainMsg )
+init mapMsg session route =
+    ( { session = session
+      , route = route
+      , map = mapMsg
+      }
+    , Cmd.map mapMsg (LocalStorage.request LocalStorage.authorizationKey)
+    )
 
 
 type Msg
     = GotLocalStorageItem ( LocalStorage.StorageKey, Maybe String )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
         GotLocalStorageItem ( key, Just token ) ->
             if key == LocalStorage.authorizationKey then
                 ( { model | session = Session.updateLogin model.session (Session.LoggedIn token) }
-                , Session.navigateTo model (model.route |> Maybe.withDefault Routes.Lists)
+                , Cmd.map model.map (Session.navigateTo model (model.route |> Maybe.withDefault Routes.Lists))
                 )
 
             else
@@ -48,17 +41,17 @@ update msg model =
 
         GotLocalStorageItem ( key, Nothing ) ->
             if key == LocalStorage.authorizationKey then
-                ( model, Session.navigateTo model Routes.Login )
+                ( model, Cmd.map model.map (Session.navigateTo model Routes.Login) )
 
             else
                 ( model, Cmd.none )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    LocalStorage.receive GotLocalStorageItem
+subscriptions : Model mainMsg -> Sub mainMsg
+subscriptions model =
+    Sub.map model.map (LocalStorage.receive GotLocalStorageItem)
 
 
-view : Model -> Html Msg
+view : Model msg -> Html msg
 view _ =
     H.div [] [ H.text "login pending..." ]

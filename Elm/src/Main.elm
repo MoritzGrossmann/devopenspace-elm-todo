@@ -61,7 +61,7 @@ type Model
     = Login (LoginPage.Page Msg)
     | List (ListPage.Page Msg)
     | Lists (ListsPage.Page Msg)
-    | LoginPending (LoginPending.Page Msg)
+    | LoginPending (LoginPending.Model Msg)
 
 
 type Msg
@@ -70,7 +70,7 @@ type Msg
     | ListMsg (Page.PageMsg ListPage.Msg)
     | LoginMsg (Page.PageMsg LoginPage.Msg)
     | ListsMsg (Page.PageMsg ListsPage.Msg)
-    | LoginPendingMsg (Page.PageMsg LoginPending.Msg)
+    | LoginPendingMsg LoginPending.Msg
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
@@ -166,13 +166,13 @@ updateLogin msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateLoginPending : Page.PageMsg LoginPending.Msg -> Model -> ( Model, Cmd Msg )
+updateLoginPending : LoginPending.Msg -> Model -> ( Model, Cmd Msg )
 updateLoginPending msg pageModel =
     case pageModel of
         LoginPending loginPendingModel ->
             let
                 ( newLoginPendingModel, cmd ) =
-                    Page.update msg loginPendingModel
+                    LoginPending.update msg loginPendingModel
             in
             ( LoginPending newLoginPendingModel, cmd )
 
@@ -223,7 +223,7 @@ view model =
                     Page.view listsModel
 
                 LoginPending loginPendingModel ->
-                    Page.view loginPendingModel
+                    LoginPending.view loginPendingModel
     in
     { title = "TODO - Elm"
     , body = [ page ]
@@ -243,7 +243,7 @@ subscriptions model =
             Page.subscriptions listsModel
 
         LoginPending loginPendingModel ->
-            Page.subscriptions loginPendingModel
+            LoginPending.subscriptions loginPendingModel
 
 
 getFlags : Model -> Flags
@@ -269,4 +269,4 @@ withSession with model =
             with (Page.getSession page)
 
         LoginPending page ->
-            with (Page.getSession page)
+            with page.session
