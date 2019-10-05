@@ -1,4 +1,4 @@
-module Page.List exposing (Model, Msg, Page, init, update, view)
+module Page.List exposing (Model, Msg, init, subscriptions, update, view)
 
 import Api.Lists
 import Api.Tasks as Api
@@ -18,12 +18,10 @@ import Session exposing (Session)
 import Task
 
 
-type alias Page msg =
-    Page.Page msg Model Msg
-
-
-type alias Model =
-    { todos : Tasks
+type alias Model mainMsg =
+    { session : Session
+    , map : Msg -> mainMsg
+    , todos : Tasks
     , newText : String
     , editingTask :
         Maybe
@@ -31,7 +29,6 @@ type alias Model =
             , text : String
             }
     , activeFilter : Filter
-    , session : Session
     , listId : TaskList.Id
     , taskList : WebData TaskList
     }
@@ -55,25 +52,28 @@ type Msg
     | ListMetaDataReceived (Result Http.Error TaskList)
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> Filter -> TaskList.Id -> ( Page msg, Cmd msg )
+init : (Msg -> mainMsg) -> Session -> Filter -> TaskList.Id -> ( Model mainMsg, Cmd mainMsg )
 init wrap session filter listId =
-    let
-        pageInit _ =
-            ( { todos = Tasks.empty
-              , newText = ""
-              , editingTask = Nothing
-              , activeFilter = filter
-              , session = session
-              , taskList = RemoteData.Loading
-              , listId = listId
-              }
-            , Cmd.batch
-                [ Api.getAll session TasksReceived listId
-                , Api.Lists.byId session ListMetaDataReceived listId
-                ]
-            )
-    in
-    Page.init wrap pageInit view update (always Sub.none) session
+    ( { session = session
+      , map = wrap
+      , todos = Tasks.empty
+      , newText = ""
+      , editingTask = Nothing
+      , activeFilter = filter
+      , taskList = RemoteData.Loading
+      , listId = listId
+      }
+    , Cmd.batch
+        [ Api.getAll session TasksReceived listId
+        , Api.Lists.byId session ListMetaDataReceived listId
+        ]
+        |> Cmd.map wrap
+    )
+
+
+subscriptions : Model mainMsg -> Sub mainMsg
+subscriptions _ =
+    Sub.none
 
 
 activeCount : Tasks -> Int
@@ -94,7 +94,7 @@ filtered filter =
             Tasks.completedTasks
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
         NoOp ->
@@ -110,6 +110,7 @@ update msg model =
             let
                 insertCmd =
                     Api.new model.session TaskReceived model.listId model.newText
+                        |> Cmd.map model.map
             in
             ( { model | newText = "" }, insertCmd )
 
@@ -122,6 +123,7 @@ update msg model =
                     newTask
                         |> Maybe.map (Api.update model.session TaskReceived model.listId)
                         |> Maybe.withDefault Cmd.none
+                        |> Cmd.map model.map
             in
             ( { model | todos = newTasks }, updateCmd )
 
@@ -129,6 +131,7 @@ update msg model =
             let
                 deleteCmd =
                     Api.delete model.session TasksReceived taskId
+                        |> Cmd.map model.map
 
                 newTasks =
                     Tasks.deleteTask taskId model.todos
@@ -144,6 +147,7 @@ update msg model =
             in
             ( { model | editingTask = Just edit }
             , Task.attempt (always NoOp) (Dom.focus ("edit_" ++ Task.idToString task.id))
+                |> Cmd.map model.map
             )
 
         UpdateEditText updatedText ->
@@ -171,6 +175,7 @@ update msg model =
                     updatedTask
                         |> Maybe.map (Api.update model.session TaskReceived model.listId)
                         |> Maybe.withDefault Cmd.none
+                        |> Cmd.map model.map
             in
             ( { model
                 | todos = newTasks
@@ -199,7 +204,7 @@ update msg model =
                             )
                             ( [], model.todos )
             in
-            ( { model | todos = deletedTasks }, Cmd.batch deleteCmds )
+            ( { model | todos = deletedTasks }, Cmd.batch deleteCmds |> Cmd.map model.map )
 
         ToggleAll setCompleted ->
             let
@@ -223,7 +228,7 @@ update msg model =
                             )
                             ( [], model.todos )
             in
-            ( { model | todos = toggledTasks }, Cmd.batch toggleCmds )
+            ( { model | todos = toggledTasks }, Cmd.batch toggleCmds |> Cmd.map model.map )
 
         TasksReceived (Ok tasks) ->
             ( { model | todos = Tasks.fromList tasks }, Cmd.none )
@@ -251,12 +256,13 @@ update msg model =
                     ( { model | taskList = RemoteData.Failure httpError }, Cmd.none )
 
 
-view : Model -> Html Msg
+view : Model mainMsg -> Html mainMsg
 view model =
     viewTodoApp model
+        |> H.map model.map
 
 
-viewTodoApp : Model -> Html Msg
+viewTodoApp : Model mainMsg -> Html Msg
 viewTodoApp model =
     H.section
         [ Attr.class "todoapp" ]
@@ -266,7 +272,7 @@ viewTodoApp model =
         ]
 
 
-viewHeader : Model -> Html Msg
+viewHeader : Model mainMsg -> Html Msg
 viewHeader model =
     H.header
         [ Attr.class "header" ]
@@ -286,7 +292,7 @@ viewHeader model =
 
 {-| should be hidden by default and shown when there are todos
 -}
-viewMain : Model -> Html Msg
+viewMain : Model mainMsg -> Html Msg
 viewMain model =
     if Tasks.isEmpty model.todos then
         H.text ""
@@ -360,7 +366,7 @@ viewTask editing task =
 
 {-| should be hidden by default and shown when there are todos
 -}
-viewFooter : Model -> Html Msg
+viewFooter : Model mainMsg -> Html Msg
 viewFooter model =
     if Tasks.isEmpty model.todos then
         H.text ""

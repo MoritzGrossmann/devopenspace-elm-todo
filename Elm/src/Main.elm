@@ -60,7 +60,7 @@ init flags location key =
 type Model
     = Login (LoginPage.Model Msg)
     | LoginPending (LoginPending.Model Msg)
-    | List (ListPage.Page Msg)
+    | List (ListPage.Model Msg)
     | Lists (ListsPage.Page Msg)
 
 
@@ -69,7 +69,7 @@ type Msg
     | UrlChanged Url
     | LoginMsg LoginPage.Msg
     | LoginPendingMsg LoginPending.Msg
-    | ListMsg (Page.PageMsg ListPage.Msg)
+    | ListMsg ListPage.Msg
     | ListsMsg (Page.PageMsg ListsPage.Msg)
 
 
@@ -180,13 +180,13 @@ updateLoginPending msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateList : Page.PageMsg ListPage.Msg -> Model -> ( Model, Cmd Msg )
+updateList : ListPage.Msg -> Model -> ( Model, Cmd Msg )
 updateList msg pageModel =
     case pageModel of
         List listModel ->
             let
                 ( newListModel, cmd ) =
-                    Page.update msg listModel
+                    ListPage.update msg listModel
             in
             ( List newListModel, cmd )
 
@@ -214,7 +214,7 @@ view model =
         page =
             case model of
                 List listModel ->
-                    Page.view listModel
+                    ListPage.view listModel
 
                 Login loginModel ->
                     LoginPage.view loginModel
@@ -234,7 +234,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     case model of
         List listModel ->
-            Page.subscriptions listModel
+            ListPage.subscriptions listModel
 
         Login loginModel ->
             LoginPage.subscriptions loginModel
@@ -260,7 +260,7 @@ withSession : (Session -> a) -> Model -> a
 withSession with model =
     case model of
         List page ->
-            with (Page.getSession page)
+            with page.session
 
         Login page ->
             with page.session
