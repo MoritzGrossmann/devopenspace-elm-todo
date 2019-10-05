@@ -58,19 +58,19 @@ init flags location key =
 
 
 type Model
-    = Login (LoginPage.Page Msg)
+    = Login (LoginPage.Model Msg)
+    | LoginPending (LoginPending.Model Msg)
     | List (ListPage.Page Msg)
     | Lists (ListsPage.Page Msg)
-    | LoginPending (LoginPending.Model Msg)
 
 
 type Msg
     = UrlRequested UrlRequest
     | UrlChanged Url
-    | ListMsg (Page.PageMsg ListPage.Msg)
-    | LoginMsg (Page.PageMsg LoginPage.Msg)
-    | ListsMsg (Page.PageMsg ListsPage.Msg)
+    | LoginMsg LoginPage.Msg
     | LoginPendingMsg LoginPending.Msg
+    | ListMsg (Page.PageMsg ListPage.Msg)
+    | ListsMsg (Page.PageMsg ListsPage.Msg)
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
@@ -152,13 +152,13 @@ update msg model =
             updateLoginPending pageMsg model
 
 
-updateLogin : Page.PageMsg LoginPage.Msg -> Model -> ( Model, Cmd Msg )
+updateLogin : LoginPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg pageModel =
     case pageModel of
         Login loginModel ->
             let
                 ( newLoginModel, cmd ) =
-                    Page.update msg loginModel
+                    LoginPage.update msg loginModel
             in
             ( Login newLoginModel, cmd )
 
@@ -217,7 +217,7 @@ view model =
                     Page.view listModel
 
                 Login loginModel ->
-                    Page.view loginModel
+                    LoginPage.view loginModel
 
                 Lists listsModel ->
                     Page.view listsModel
@@ -237,7 +237,7 @@ subscriptions model =
             Page.subscriptions listModel
 
         Login loginModel ->
-            Page.subscriptions loginModel
+            LoginPage.subscriptions loginModel
 
         Lists listsModel ->
             Page.subscriptions listsModel
@@ -263,7 +263,7 @@ withSession with model =
             with (Page.getSession page)
 
         Login page ->
-            with (Page.getSession page)
+            with page.session
 
         Lists page ->
             with (Page.getSession page)

@@ -1,7 +1,6 @@
 module Page.Login exposing
     ( Model
-    , Msg(..)
-    , Page
+    , Msg
     , init
     , subscriptions
     , update
@@ -24,12 +23,13 @@ import Routes exposing (Route)
 import Session exposing (Login(..), Session)
 
 
-type alias Model =
+type alias Model mainMsg =
     { username : String
     , password : String
     , session : Session
     , token : WebData String
     , transitionTo : Maybe Route
+    , map : Msg -> mainMsg
     }
 
 
@@ -46,20 +46,20 @@ type Msg
     | LoginResult (Result Http.Error String)
 
 
-type alias Page msg =
-    Page.Page msg Model Msg
-
-
-init : (Page.PageMsg Msg -> msg) -> Session -> Maybe Route -> ( Page msg, Cmd msg )
+init : (Msg -> mainMsg) -> Session -> Maybe Route -> ( Model mainMsg, Cmd msg )
 init wrapMsg session transitionTo =
-    let
-        pageInit _ =
-            ( { username = "", password = "", session = session, token = RemoteData.NotAsked, transitionTo = transitionTo }, Cmd.none )
-    in
-    Page.init wrapMsg pageInit view update subscriptions session
+    ( { username = ""
+      , password = ""
+      , session = session
+      , token = RemoteData.NotAsked
+      , transitionTo = transitionTo
+      , map = wrapMsg
+      }
+    , Cmd.none
+    )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
         NoOp ->
@@ -72,7 +72,9 @@ update msg model =
             ( { model | password = password }, Cmd.none )
 
         Submit ->
-            ( { model | token = RemoteData.Loading }, Api.Session.post model.session LoginResult model.username model.password )
+            ( { model | token = RemoteData.Loading }
+            , Cmd.map model.map (Api.Session.post model.session LoginResult model.username model.password)
+            )
 
         LoginResult result ->
             case result of
@@ -85,18 +87,19 @@ update msg model =
                         [ Session.navigateTo model (model.transitionTo |> Maybe.withDefault Routes.Lists)
                         , LocalStorage.store ( LocalStorage.authorizationKey, Just (token |> Enc.string) )
                         ]
+                        |> Cmd.map model.map
                     )
 
                 Err error ->
                     ( { model | token = RemoteData.Failure error }, Cmd.none )
 
 
-subscriptions : Model -> Sub Msg
+subscriptions : Model mainMsg -> Sub mainMsg
 subscriptions _ =
     Sub.none
 
 
-view : Model -> Html Msg
+view : Model mainMsg -> Html mainMsg
 view model =
     H.section
         [ Attr.class "todoapp" ]
@@ -123,3 +126,4 @@ view model =
             , H.button [ Attr.style "display" "none", Attr.type_ "submit" ] []
             ]
         ]
+        |> H.map model.map
