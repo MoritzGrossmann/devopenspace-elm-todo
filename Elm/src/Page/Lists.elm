@@ -7,7 +7,7 @@ import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
-import Models.List as TodoList
+import Models.TaskList as TaskList exposing (TaskList)
 import Page
 import RemoteData exposing (WebData)
 import Routes
@@ -20,7 +20,7 @@ type alias Page msg =
 
 type alias Model =
     { session : Session
-    , lists : WebData (Dict Int TodoList.MetaData)
+    , lists : WebData (Dict Int TaskList)
     , neueListe : String
     }
 
@@ -40,12 +40,12 @@ init wrap session =
 
 
 type Msg
-    = ListResult (Result Http.Error (List TodoList.MetaData))
+    = ListResult (Result Http.Error (List TaskList))
     | UpdateNeueListe String
     | SubmitNeueListe
-    | NeueListeResult (Result Http.Error TodoList.MetaData)
-    | DeleteList TodoList.Id
-    | DeleteListResult TodoList.Id (Result Http.Error ())
+    | NeueListeResult (Result Http.Error TaskList)
+    | DeleteList TaskList.Id
+    | DeleteListResult TaskList.Id (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -71,7 +71,7 @@ update msg model =
         NeueListeResult (Ok liste) ->
             ( { model
                 | neueListe = ""
-                , lists = model.lists |> RemoteData.map (\listen -> RemoteData.Success (listen |> Dict.insert (TodoList.idToInt liste.id) liste)) |> RemoteData.withDefault model.lists
+                , lists = model.lists |> RemoteData.map (\listen -> RemoteData.Success (listen |> Dict.insert (TaskList.idToInt liste.id) liste)) |> RemoteData.withDefault model.lists
               }
             , Cmd.none
             )
@@ -83,7 +83,7 @@ update msg model =
             ( model, Api.Lists.delete model.session (DeleteListResult id) id )
 
         DeleteListResult id (Ok _) ->
-            ( { model | lists = model.lists |> RemoteData.map (Dict.remove (TodoList.idToInt id)) }, Cmd.none )
+            ( { model | lists = model.lists |> RemoteData.map (Dict.remove (TaskList.idToInt id)) }, Cmd.none )
 
         DeleteListResult _ (Err _) ->
             ( model, Cmd.none )
@@ -115,7 +115,7 @@ view model =
         ]
 
 
-viewListItem : Session -> TodoList.MetaData -> Html Msg
+viewListItem : Session -> TaskList -> Html Msg
 viewListItem session listItem =
     H.li [ Attr.class "todo" ]
         [ H.div
@@ -136,8 +136,8 @@ viewListItem session listItem =
         ]
 
 
-listToDict : List TodoList.MetaData -> Dict Int TodoList.MetaData
+listToDict : List TaskList -> Dict Int TaskList
 listToDict list =
     list
-        |> List.map (\i -> ( TodoList.idToInt i.id, i ))
+        |> List.map (\i -> ( TaskList.idToInt i.id, i ))
         |> Dict.fromList

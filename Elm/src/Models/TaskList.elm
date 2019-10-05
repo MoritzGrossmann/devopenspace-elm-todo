@@ -1,4 +1,4 @@
-module Models.List exposing (Id, List, MetaData, decodeMetaData, encodeId, idDecoder, idFromInt, idToInt, idToString)
+module Models.TaskList exposing (Id, TaskList, decoder, encodeId, idDecoder, idFromInt, idToInt, idToString)
 
 import Json.Decode as Json exposing (Decoder)
 import Json.Encode as Enc exposing (Value)
@@ -33,21 +33,16 @@ idFromInt =
     Id
 
 
-type alias List =
-    { metaData : MetaData
-    }
-
-
-type alias MetaData =
+type alias TaskList =
     { name : String
     , id : Id
     , active : Int
     }
 
 
-decodeMetaData : Json.Decoder MetaData
-decodeMetaData =
-    Json.map3 MetaData
+decoder : Json.Decoder TaskList
+decoder =
+    Json.map3 TaskList
         (Json.field "name" Json.string)
         (Json.field "id" idDecoder)
         (Json.field "nrActive" Json.int)

@@ -9,7 +9,7 @@ import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Decode as Json
-import Models.List as TodoList
+import Models.TaskList as TaskList exposing (TaskList)
 import Page
 import RemoteData exposing (WebData)
 import Routes
@@ -31,8 +31,8 @@ type alias Model =
             }
     , activeFilter : Filter
     , session : Session
-    , listId : TodoList.Id
-    , listMetaData : WebData TodoList.MetaData
+    , listId : TaskList.Id
+    , taskList : WebData TaskList
     }
 
 
@@ -51,10 +51,10 @@ type Msg
     | ToggleAll Bool
     | ItemsReceived (Result Http.Error (List Todos.Item))
     | ItemReceived (Result Http.Error Todos.Item)
-    | ListMetaDataReceived (Result Http.Error TodoList.MetaData)
+    | ListMetaDataReceived (Result Http.Error TaskList)
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> Filter -> TodoList.Id -> ( Page msg, Cmd msg )
+init : (Page.PageMsg Msg -> msg) -> Session -> Filter -> TaskList.Id -> ( Page msg, Cmd msg )
 init wrap session filter listId =
     let
         pageInit _ =
@@ -63,7 +63,7 @@ init wrap session filter listId =
               , editingItem = Nothing
               , activeFilter = filter
               , session = session
-              , listMetaData = RemoteData.Loading
+              , taskList = RemoteData.Loading
               , listId = listId
               }
             , Cmd.batch
@@ -239,7 +239,7 @@ update msg model =
             ( model, Cmd.none )
 
         ListMetaDataReceived (Ok metaData) ->
-            ( { model | listMetaData = RemoteData.Success metaData }, Cmd.none )
+            ( { model | taskList = RemoteData.Success metaData }, Cmd.none )
 
         ListMetaDataReceived (Err httpError) ->
             case httpError of
@@ -247,7 +247,7 @@ update msg model =
                     ( model, Session.navigateTo model Routes.Login )
 
                 _ ->
-                    ( { model | listMetaData = RemoteData.Failure httpError }, Cmd.none )
+                    ( { model | taskList = RemoteData.Failure httpError }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -269,7 +269,7 @@ viewHeader : Model -> Html Msg
 viewHeader model =
     H.header
         [ Attr.class "header" ]
-        [ H.h1 [] [ H.text (model.listMetaData |> RemoteData.map .name |> RemoteData.withDefault "") ]
+        [ H.h1 [] [ H.text (model.taskList |> RemoteData.map .name |> RemoteData.withDefault "") ]
         , H.input
             [ Attr.class "new-todo"
             , Attr.placeholder "what needs to be done?"
