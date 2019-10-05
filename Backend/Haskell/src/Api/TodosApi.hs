@@ -11,29 +11,29 @@
 
 module Api.TodosApi
     ( TodosApi
-    , server
+    , serverT
     ) where
 
 
-import           GHC.Generics
-import           Authentication (AuthenticatedUser(..), hoistServerWithAuth)
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Reader (ReaderT, runReaderT)
+import           Authentication (AuthenticatedUser(..))
 import           Data.Aeson (ToJSON, FromJSON)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
 import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
-import qualified Db
-import qualified Db.Lists as DbL
+import           Db (DbHandler, liftHandler)
 import qualified Db.Tasks as Db
+import           GHC.Generics
+import           Imports
 import           Models.ListId
-import           Servant
+import           Models.Tasks (Task, TaskId)
+import qualified Models.Tasks as Task
+import           Models.User (UserName)
 import qualified Servant.Auth as SA
 import           Servant.Auth.Server (Auth)
 import qualified Servant.Auth.Server as SAS
 
-newtype TaskText 
+newtype TaskText
   = TaskText Text
   deriving (Generic, ToJSON, FromJSON, ToSchema)
 
@@ -52,12 +52,15 @@ type TodosApi =
     )
   )
 
-server :: Db.Handle -> Server TodosApi
-server dbHandle = hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHandlers
+serverT :: ServerT TodosApi DbHandler
+serverT = todoHandlers
   where
-    todoHandlers (SAS.Authenticated user) = withListId userName :<|> withoutListId userName
+    todoHandlers (SAS.Authenticated user) =
+      withListId userName :<|> withoutListId userName
       where userName = auName user
-    todoHandlers _ = SAS.throwAll err401
+    todoHandlers _ =
+      (\_ -> throwErr401 :<|> (\_ -> throwErr401)) :<|> ((\_ -> throwErr401) :<|> (\_ -> throwErr401) :<|> (\_ -> throwErr401))
+      where throwErr401 = liftHandler $ throwError err401
     withListId userName listId =
       getAllHandler userName listId
       :<|> newHandler userName listId
@@ -66,42 +69,52 @@ server dbHandle = hoistServerWithAuth (Proxy :: Proxy TodosApi) toHandle todoHan
       :<|> deleteHandler userName
       :<|> queryHandler userName
 
-    checkListAccess listId userName = do
-      exists <- DbL.listExists userName listId
-      if not exists then throwError (listNotFound listId) else pure ()
+    checkListAccess :: ListId -> UserName -> DbHandler ()
+    checkListAccess lId userName = do
+      hasAccess <- Task.hasListAccess userName lId
+      if not hasAccess then liftHandler (throwError $ listNotFound lId) else pure ()
 
+    getAllHandler :: UserName -> ListId -> DbHandler [Task]
     getAllHandler userName listId = do
       checkListAccess listId userName
-      Db.listTasks userName listId
+      Task.list userName listId
 
+    updateHandler :: UserName -> Task -> DbHandler Task
     updateHandler userName task = do
       liftIO $ putStrLn $ "updating task " ++ show (Db.id task)
-      Db.modifyTask userName task
-      found <- Db.getTask userName (Db.id task)
-      case found of
-        Nothing -> throwError notFound
-        Just t-> return t
+      res <- Task.update userName (Task.id task) task
+      if not res
+        then liftHandler (throwError err500)
+        else do
+          found <- Task.get userName (Task.id task)
+          case found of
+            Nothing -> liftHandler (throwError notFound)
+            Just t-> return t
 
+    newHandler :: UserName -> ListId -> TaskText -> DbHandler Task
     newHandler userName listId (TaskText txt) = do
-      task <- Db.insertTask userName listId txt
+      task <- Task.create userName listId txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show (Db.id task)
       return task
 
+    deleteHandler :: UserName -> TaskId -> DbHandler NoContent
     deleteHandler userName tId = do
-      Db.deleteTask userName tId
-      liftIO $ putStrLn $ "deleted task " ++ show tId
-      pure NoContent
+      deleted <- Task.delete userName tId
+      if deleted
+        then do
+          liftIO $ putStrLn $ "deleted task " ++ show tId
+          pure NoContent
+        else do
+          liftIO $ putStrLn $ "could not delete task " ++ show tId
+          liftHandler $ throwError err500
 
+    queryHandler :: UserName -> TaskId -> DbHandler Task
     queryHandler userName tId = do
       liftIO $ putStrLn $ "getting task " ++ show tId
-      found <- Db.getTask userName tId
+      found <- Task.get userName tId
       case found of
-        Nothing -> throwError notFound
+        Nothing -> liftHandler $ throwError notFound
         Just task -> return task
-
-    toHandle :: ReaderT Db.Handle Handler a -> Handler a
-    toHandle r = runReaderT r dbHandle
-
 
 notFound :: ServerError
 notFound = err404 { errBody = "sorry - don't know this task" }

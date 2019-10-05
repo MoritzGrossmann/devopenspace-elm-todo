@@ -38,12 +38,13 @@ initDb file = do
   return handle
 
 type DbHandler
-  = ActionDbCarrier DbUsers.UsersTag
+  = ActionDbCarrier DbTasks.TasksTag
+  ( ActionDbCarrier DbUsers.UsersTag
   ( ActionDbCarrier DbLists.ListsTag
-  ( ReaderC Context (LiftC Handler)))
+  ( ReaderC Context (LiftC Handler))))
 
 handleWithContext :: Context -> DbHandler a -> Handler a
-handleWithContext context = runM . runReader context . runActionDb . runActionDb
+handleWithContext context = runM . runReader context . runActionDb . runActionDb . runActionDb
 
 -- | Lifts a 'Handler' action (like @throwError@) into 'DbHandler'
 -- neccessary because I did not implement MTL style classes on it
@@ -53,5 +54,6 @@ handleWithContext context = runM . runReader context . runActionDb . runActionDb
 --   - then 'LiftC' into 'ReaderC'
 --   - then from 'ReaderC' into the 'ActionDbCarrier' for the Lists-Actions
 --   - then into the 'ActionDbCarrier' for the Users-Actions
+--   - then into the 'ActionDbCarrier' for teh Tasks-Actions
 liftHandler :: Handler a -> DbHandler a
-liftHandler = lift . lift . lift . lift
+liftHandler = lift . lift . lift . lift . lift

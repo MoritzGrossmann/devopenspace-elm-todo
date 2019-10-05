@@ -2,6 +2,8 @@
 module Imports
   ( Has
   , Carrier(..), Member
+  , HFunctor
+  , send
   , Effect
   , (:+:)(..)
   , handleCoercible
@@ -11,7 +13,7 @@ module Imports
   ) where
 
 import Control.Effect (Effect)
-import Control.Effect.Carrier (Member, Carrier(..), (:+:)(..), handleCoercible)
+import Control.Effect.Carrier (HFunctor, send, Member, Carrier(..), (:+:)(..), handleCoercible)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Servant hiding (Context)
 

@@ -48,7 +48,8 @@ startApp settingsPath = do
 
 
 -- prefix APIs with "api/"
-type ApiProxy = "api" :> (UsersApi :<|> ListsApi :<|> TodosApi)
+type AuthApiProxy = UsersApi :<|> ListsApi :<|> TodosApi
+type ApiProxy = "api" :> AuthApiProxy
 type WebProxy = RouteApi
 type API = SwUI.SwaggerSchemaUI "swagger-ui" "swagger.json" :<|> ApiProxy :<|> WebProxy
 
@@ -59,11 +60,13 @@ app context pageConfig = myCors $ do
       jwtSettings = contextJwtSettings context
       authCfg = Auth.authCheck dbHandle
       cfg = authCfg :. SAS.defaultCookieSettings :. jwtSettings :. EmptyContext
+      authServer = Auth.hoistServerWithAuth
+        (Proxy @AuthApiProxy)
+        (Db.handleWithContext context)
+        (UsersApi.serverT :<|> ListsApi.serverT :<|> TodosApi.serverT)
   Servant.serveWithContext (Proxy :: Proxy API) cfg $
     SwUI.swaggerSchemaUIServer swaggerDoc
-    :<|> ((Auth.hoistServerWithAuth (Proxy @UsersApi) (Db.handleWithContext context) UsersApi.serverT)
-    :<|> (Auth.hoistServerWithAuth (Proxy :: Proxy ListsApi) (Db.handleWithContext context) ListsApi.serverT)
-    :<|> TodosApi.server dbHandle)
+    :<|> authServer
     :<|> RouteApi.server pageConfig
   where
     myCors = cors $ const $ Just myPolicy
