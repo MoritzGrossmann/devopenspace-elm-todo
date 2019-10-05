@@ -24,6 +24,7 @@ import           Db.Internal
 import qualified Db.Lists as DbLists
 import qualified Db.Tasks as DbTasks
 import qualified Db.Users as DbUsers
+import qualified Db.Users.Carrier as DbUsers
 import           Servant (Handler)
 
 

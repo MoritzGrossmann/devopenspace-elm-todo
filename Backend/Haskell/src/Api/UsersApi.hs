@@ -25,7 +25,9 @@ import           Data.Swagger.Schema (ToSchema)
 import           Data.Text (Text)
 import           Data.Text.Encoding (decodeUtf8)
 import           Db (DbHandler, liftHandler)
+import           Models.User (Login, ChangePassword)
 import qualified Models.User as User
+import qualified Models.User.Effects as User
 import           Servant
 import           Servant.Auth (Auth)
 import qualified Servant.Auth as SA
@@ -39,9 +41,9 @@ instance ToSchema NoContent
 
 type UsersApi =
   "user" :> (
-    "register" :> ReqBody '[JSON] User.Login :> Post '[JSON] JwtToken
+    "register" :> ReqBody '[JSON] Login :> Post '[JSON] JwtToken
     :<|> Auth '[SA.BasicAuth, SA.JWT] AuthenticatedUser :> "login" :> Get '[JSON] JwtToken
-    :<|> Auth '[SA.BasicAuth, SA.JWT] AuthenticatedUser :> "changePwd" :> ReqBody '[JSON] User.ChangePassword :> Post '[JSON] NoContent
+    :<|> Auth '[SA.BasicAuth, SA.JWT] AuthenticatedUser :> "changePwd" :> ReqBody '[JSON] ChangePassword :> Post '[JSON] NoContent
   )
 
 serverT :: ServerT UsersApi DbHandler
@@ -52,7 +54,7 @@ serverT = userHandlers
       :<|> loginHandler
       :<|> changePwdHandler
 
-    registerHandler :: User.Login -> DbHandler JwtToken
+    registerHandler :: Login -> DbHandler JwtToken
     registerHandler login = do
       registerRes <- User.register login
       case registerRes of
@@ -67,7 +69,7 @@ serverT = userHandlers
       returnJwtFor user
     loginHandler _ = liftHandler $ throwError err401
 
-    changePwdHandler :: (SAS.AuthResult AuthenticatedUser) -> User.ChangePassword -> DbHandler NoContent
+    changePwdHandler :: (SAS.AuthResult AuthenticatedUser) -> ChangePassword -> DbHandler NoContent
     changePwdHandler (SAS.Authenticated authUser) pwdChange = do
       let userName = auName authUser
       changeRes <- User.changePassword userName pwdChange

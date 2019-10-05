@@ -11,54 +11,15 @@ module Db.Users
   , insertUser
   , deleteUser
   , updateUser
-  , UsersTag
-  , runUserActionDb
   ) where
 
-import           Context.Internal
-import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
-import           Control.Effect.Reader (Reader)
 import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader (MonadReader)
 import           Data.Maybe (listToMaybe)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
-import           Db.Carrier (ActionDbCarrier(..), liftDb)
 import           Db.Internal
-import           Imports
 import           Models.User
-
-data UsersTag
-
-runUserActionDb :: ActionDbCarrier UsersTag m a -> m a
-runUserActionDb = runActionDbCarrier
-
-instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
-  => Carrier(UserAction :+: sig) (ActionDbCarrier UsersTag m) where
-  eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
-  eff (L (Register login k)) = k =<< (liftDb $ do
-    userRes <- createIO login
-    case userRes of
-      Nothing -> pure Nothing
-      Just user -> do
-        insertUser user
-        pure $ Just user)
-  eff (L (UpdatePassword userName ChangePassword{..} k)) = k =<< (liftDb $ do
-      foundUser <- getUser userName
-      case foundUser of
-        Nothing -> pure ChPwdInvalidUser
-        Just user | not (validatePassword user oldPassword) -> pure ChPwdInvalidPassword
-        Just _ -> do
-          createRes <- createIO (Login userName newPassword)
-          case createRes of
-            Just changedUser -> do
-              updateUser userName changedUser
-              pure ChPwdSuccess
-            Nothing -> pure ChPwdInternalError)
-  eff (L (Get userName k)) =
-    liftDb (getUser userName) >>= k
-  eff (L (Delete userName k)) =
-    liftDb (deleteUser userName) >> k
 
 createTables :: (MonadReader Handle m, MonadIO m) => m ()
 createTables = useHandle $ \conn ->

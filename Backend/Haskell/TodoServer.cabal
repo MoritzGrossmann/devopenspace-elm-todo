@@ -29,11 +29,14 @@ library
                      , Db.Lists
                      , Db.Tasks
                      , Db.Users
+                     , Db.Users.Carrier
                      , Imports
                      , Models.ListId
                      , Models.Lists
                      , Models.Tasks
                      , Models.User
+                     , Models.User.Effects
+                     , Models.User.Internal
                      , Page
                      , Settings
   build-depends:       base >= 4.7 && < 5
