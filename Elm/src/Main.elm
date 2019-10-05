@@ -61,7 +61,7 @@ type Model
     = Login (LoginPage.Model Msg)
     | LoginPending (LoginPending.Model Msg)
     | List (ListPage.Model Msg)
-    | Lists (ListsPage.Page Msg)
+    | Lists (ListsPage.Model Msg)
 
 
 type Msg
@@ -70,7 +70,7 @@ type Msg
     | LoginMsg LoginPage.Msg
     | LoginPendingMsg LoginPending.Msg
     | ListMsg ListPage.Msg
-    | ListsMsg (Page.PageMsg ListsPage.Msg)
+    | ListsMsg ListsPage.Msg
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
@@ -194,13 +194,13 @@ updateList msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateLists : Page.PageMsg ListsPage.Msg -> Model -> ( Model, Cmd Msg )
+updateLists : ListsPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLists msg pageModel =
     case pageModel of
         Lists listsModel ->
             let
                 ( newListsModel, cmd ) =
-                    Page.update msg listsModel
+                    ListsPage.update msg listsModel
             in
             ( Lists newListsModel, cmd )
 
@@ -220,7 +220,7 @@ view model =
                     LoginPage.view loginModel
 
                 Lists listsModel ->
-                    Page.view listsModel
+                    ListsPage.view listsModel
 
                 LoginPending loginPendingModel ->
                     LoginPending.view loginPendingModel
@@ -240,7 +240,7 @@ subscriptions model =
             LoginPage.subscriptions loginModel
 
         Lists listsModel ->
-            Page.subscriptions listsModel
+            ListsPage.subscriptions listsModel
 
         LoginPending loginPendingModel ->
             LoginPending.subscriptions loginPendingModel
@@ -266,7 +266,7 @@ withSession with model =
             with page.session
 
         Lists page ->
-            with (Page.getSession page)
+            with page.session
 
         LoginPending page ->
             with page.session

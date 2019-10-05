@@ -1,4 +1,4 @@
-module Page.Lists exposing (Model, Msg(..), Page, init, update, view)
+module Page.Lists exposing (Model, Msg, init, subscriptions, update, view)
 
 import Api.Lists
 import Dict exposing (Dict)
@@ -15,29 +15,29 @@ import Routes
 import Session exposing (Session)
 
 
-type alias Page msg =
-    Page.Page msg Model Msg
-
-
-type alias Model =
+type alias Model mainMsg =
     { session : Session
+    , map : Msg -> mainMsg
     , lists : WebData TaskLists
     , neueListe : String
     }
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> ( Page msg, Cmd msg )
+init : (Msg -> mainMsg) -> Session -> ( Model mainMsg, Cmd mainMsg )
 init wrap session =
-    let
-        pageInit _ =
-            ( { session = session
-              , lists = RemoteData.Loading
-              , neueListe = ""
-              }
-            , Api.Lists.all session ListResult
-            )
-    in
-    Page.init wrap pageInit view update (always Sub.none) session
+    ( { session = session
+      , map = wrap
+      , lists = RemoteData.Loading
+      , neueListe = ""
+      }
+    , Api.Lists.all session ListResult
+        |> Cmd.map wrap
+    )
+
+
+subscriptions : Model mainMsg -> Sub mainMsg
+subscriptions _ =
+    Sub.none
 
 
 type Msg
@@ -49,7 +49,7 @@ type Msg
     | DeleteListResult TaskList.Id (Result Http.Error ())
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
         ListResult (Ok lists) ->
@@ -58,7 +58,10 @@ update msg model =
         ListResult (Err httpError) ->
             case httpError of
                 Http.BadStatus 401 ->
-                    ( { model | lists = RemoteData.Failure httpError }, Session.navigateTo model Routes.Login )
+                    ( { model | lists = RemoteData.Failure httpError }
+                    , Session.navigateTo model Routes.Login
+                        |> Cmd.map model.map
+                    )
 
                 _ ->
                     ( { model | lists = RemoteData.Failure httpError }, Cmd.none )
@@ -67,7 +70,10 @@ update msg model =
             ( { model | neueListe = string }, Cmd.none )
 
         SubmitNeueListe ->
-            ( model, Api.Lists.add model.session NeueListeResult model.neueListe )
+            ( model
+            , Api.Lists.add model.session NeueListeResult model.neueListe
+                |> Cmd.map model.map
+            )
 
         NeueListeResult (Ok liste) ->
             ( { model
@@ -83,7 +89,10 @@ update msg model =
             ( model, Cmd.none )
 
         DeleteList id ->
-            ( model, Api.Lists.delete model.session (DeleteListResult id) id )
+            ( model
+            , Api.Lists.delete model.session (DeleteListResult id) id
+                |> Cmd.map model.map
+            )
 
         DeleteListResult id (Ok _) ->
             ( { model
@@ -98,7 +107,7 @@ update msg model =
             ( model, Cmd.none )
 
 
-view : Model -> Html Msg
+view : Model mainMsg -> Html mainMsg
 view model =
     H.section
         [ Attr.class "todoapp" ]
@@ -122,6 +131,7 @@ view model =
                 |> RemoteData.withDefault []
             )
         ]
+        |> H.map model.map
 
 
 viewListItem : Session -> TaskList -> Html Msg
