@@ -1,13 +1,13 @@
 module Page.Lists exposing (Model, Msg(..), Page, init, update, view)
 
 import Api.Lists
-import Components.Todos exposing (Filter(..))
 import Dict exposing (Dict)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Models.TaskList as TaskList exposing (TaskList)
+import Models.Tasks exposing (Filter(..))
 import Page
 import RemoteData exposing (WebData)
 import Routes

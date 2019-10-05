@@ -1,8 +1,8 @@
 module Routes exposing (Route(..), locationToRoute, routeToUrlString)
 
-import Components.Todos exposing (Filter(..))
 import Flags exposing (BaseUrlPath, buildUrl)
 import Models.TaskList as TaskList
+import Models.Tasks exposing (Filter(..))
 import Url exposing (Url)
 import Url.Parser as UrlP exposing ((</>), Parser)
 

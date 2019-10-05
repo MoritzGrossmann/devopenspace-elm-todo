@@ -1,15 +1,16 @@
 module Page.List exposing (Model, Msg, Page, init, update, view)
 
 import Api.Lists
-import Api.Todos as Api
+import Api.Tasks as Api
 import Browser.Dom as Dom
-import Components.Todos as Todos exposing (Filter(..), Todos)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Decode as Json
+import Models.Task as Task exposing (Task)
 import Models.TaskList as TaskList exposing (TaskList)
+import Models.Tasks as Tasks exposing (Filter(..), Tasks)
 import Page
 import RemoteData exposing (WebData)
 import Routes
@@ -22,11 +23,11 @@ type alias Page msg =
 
 
 type alias Model =
-    { todos : Todos
+    { todos : Tasks
     , newText : String
-    , editingItem :
+    , editingTask :
         Maybe
-            { id : Todos.Id
+            { id : Task.Id
             , text : String
             }
     , activeFilter : Filter
@@ -41,16 +42,16 @@ type Msg
     | UpdateNewText String
     | ClearNewText
     | AddTodo
-    | CheckItem Todos.Id Bool
-    | DeleteItem Todos.Id
-    | EditItem Todos.Item
+    | CheckTask Task.Id Bool
+    | DeleteTask Task.Id
+    | EditTask Task
     | UpdateEditText String
     | FinishEdit
     | CancelEdit
     | ClearCompleted
     | ToggleAll Bool
-    | ItemsReceived (Result Http.Error (List Todos.Item))
-    | ItemReceived (Result Http.Error Todos.Item)
+    | TasksReceived (Result Http.Error (List Task))
+    | TaskReceived (Result Http.Error Task)
     | ListMetaDataReceived (Result Http.Error TaskList)
 
 
@@ -58,16 +59,16 @@ init : (Page.PageMsg Msg -> msg) -> Session -> Filter -> TaskList.Id -> ( Page m
 init wrap session filter listId =
     let
         pageInit _ =
-            ( { todos = Todos.empty
+            ( { todos = Tasks.empty
               , newText = ""
-              , editingItem = Nothing
+              , editingTask = Nothing
               , activeFilter = filter
               , session = session
               , taskList = RemoteData.Loading
               , listId = listId
               }
             , Cmd.batch
-                [ Api.getAll session ItemsReceived listId
+                [ Api.getAll session TasksReceived listId
                 , Api.Lists.byId session ListMetaDataReceived listId
                 ]
             )
@@ -75,22 +76,22 @@ init wrap session filter listId =
     Page.init wrap pageInit view update (always Sub.none) session
 
 
-activeCount : Todos -> Int
+activeCount : Tasks -> Int
 activeCount todos =
-    List.length (todos |> Todos.activeTodos)
+    List.length (todos |> Tasks.activeTasks)
 
 
-filtered : Filter -> Todos -> List Todos.Item
+filtered : Filter -> Tasks -> List Task
 filtered filter =
     case filter of
         All ->
-            Todos.allTodos
+            Tasks.allTasks
 
         Active ->
-            Todos.activeTodos
+            Tasks.activeTasks
 
         Completed ->
-            Todos.completedTodos
+            Tasks.completedTasks
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -108,72 +109,72 @@ update msg model =
         AddTodo ->
             let
                 insertCmd =
-                    Api.new model.session ItemReceived model.listId model.newText
+                    Api.new model.session TaskReceived model.listId model.newText
             in
             ( { model | newText = "" }, insertCmd )
 
-        CheckItem itemId completed ->
+        CheckTask taskId completed ->
             let
-                ( newItem, newTodos ) =
-                    Todos.setCompleted completed itemId model.todos
+                ( newTask, newTasks ) =
+                    Tasks.setCompleted completed taskId model.todos
 
                 updateCmd =
-                    newItem
-                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
+                    newTask
+                        |> Maybe.map (Api.update model.session TaskReceived model.listId)
                         |> Maybe.withDefault Cmd.none
             in
-            ( { model | todos = newTodos }, updateCmd )
+            ( { model | todos = newTasks }, updateCmd )
 
-        DeleteItem itemId ->
+        DeleteTask taskId ->
             let
                 deleteCmd =
-                    Api.delete model.session ItemsReceived itemId
+                    Api.delete model.session TasksReceived taskId
 
-                newTodos =
-                    Todos.deleteItem itemId model.todos
+                newTasks =
+                    Tasks.deleteTask taskId model.todos
             in
-            ( { model | todos = newTodos }, deleteCmd )
+            ( { model | todos = newTasks }, deleteCmd )
 
-        EditItem item ->
+        EditTask task ->
             let
                 edit =
-                    { id = item.id
-                    , text = item.text
+                    { id = task.id
+                    , text = task.text
                     }
             in
-            ( { model | editingItem = Just edit }
-            , Task.attempt (always NoOp) (Dom.focus ("edit_" ++ Todos.idToString item.id))
+            ( { model | editingTask = Just edit }
+            , Task.attempt (always NoOp) (Dom.focus ("edit_" ++ Task.idToString task.id))
             )
 
         UpdateEditText updatedText ->
             let
                 edit =
-                    model.editingItem
-                        |> Maybe.map (\item -> { item | text = updatedText })
+                    model.editingTask
+                        |> Maybe.map (\task -> { task | text = updatedText })
             in
-            ( { model | editingItem = edit }, Cmd.none )
+            ( { model | editingTask = edit }, Cmd.none )
 
         CancelEdit ->
-            ( { model | editingItem = Nothing }, Cmd.none )
+            ( { model | editingTask = Nothing }, Cmd.none )
 
         FinishEdit ->
             let
-                ( updatedItem, newTodos ) =
-                    model.editingItem
+                ( updatedTask, newTasks ) =
+                    model.editingTask
                         |> Maybe.map
-                            (\editingItem ->
-                                Todos.setText editingItem.text editingItem.id model.todos
+                            (\editingTask ->
+                                Tasks.setText editingTask.text editingTask.id model.todos
                             )
                         |> Maybe.withDefault ( Nothing, model.todos )
 
                 updateCmd =
-                    updatedItem
-                        |> Maybe.map (Api.update model.session ItemReceived model.listId)
+                    updatedTask
+                        |> Maybe.map (Api.update model.session TaskReceived model.listId)
                         |> Maybe.withDefault Cmd.none
             in
             ( { model
-                | todos = newTodos
-                , editingItem = Nothing
+                | todos = newTasks
+                , editingTask = Nothing
               }
             , updateCmd
             )
@@ -181,60 +182,60 @@ update msg model =
         ClearCompleted ->
             let
                 delete todos id =
-                    Todos.deleteItem id todos
+                    Tasks.deleteTask id todos
 
-                ( deleteCmds, deletedTodos ) =
-                    Todos.completedTodos model.todos
+                ( deleteCmds, deletedTasks ) =
+                    Tasks.completedTasks model.todos
                         |> List.foldl
-                            (\item ( cmds, _ ) ->
+                            (\task ( cmds, _ ) ->
                                 let
-                                    newTodos =
-                                        Todos.deleteItem item.id model.todos
+                                    newTasks =
+                                        Tasks.deleteTask task.id model.todos
 
                                     deleteCmd =
-                                        Api.delete model.session ItemsReceived item.id
+                                        Api.delete model.session TasksReceived task.id
                                 in
-                                ( deleteCmd :: cmds, newTodos )
+                                ( deleteCmd :: cmds, newTasks )
                             )
                             ( [], model.todos )
             in
-            ( { model | todos = deletedTodos }, Cmd.batch deleteCmds )
+            ( { model | todos = deletedTasks }, Cmd.batch deleteCmds )
 
         ToggleAll setCompleted ->
             let
                 toggle todos id =
-                    Todos.setCompleted setCompleted id todos
+                    Tasks.setCompleted setCompleted id todos
 
-                ( toggleCmds, toggledTodos ) =
+                ( toggleCmds, toggledTasks ) =
                     filtered model.activeFilter model.todos
                         |> List.foldl
-                            (\item ( cmds, todos ) ->
+                            (\task ( cmds, todos ) ->
                                 let
-                                    ( toggledItem, newTodos ) =
-                                        toggle todos item.id
+                                    ( toggledTask, newTasks ) =
+                                        toggle todos task.id
 
                                     toggleCmd =
-                                        toggledItem
-                                            |> Maybe.map (Api.update model.session ItemReceived model.listId)
+                                        toggledTask
+                                            |> Maybe.map (Api.update model.session TaskReceived model.listId)
                                             |> Maybe.withDefault Cmd.none
                                 in
-                                ( toggleCmd :: cmds, newTodos )
+                                ( toggleCmd :: cmds, newTasks )
                             )
                             ( [], model.todos )
             in
-            ( { model | todos = toggledTodos }, Cmd.batch toggleCmds )
+            ( { model | todos = toggledTasks }, Cmd.batch toggleCmds )
 
-        ItemsReceived (Ok items) ->
-            ( { model | todos = Todos.fromList items }, Cmd.none )
+        TasksReceived (Ok tasks) ->
+            ( { model | todos = Tasks.fromList tasks }, Cmd.none )
 
-        ItemsReceived (Err _) ->
+        TasksReceived (Err _) ->
             -- for this Demo we ignore communication errors - sorry
             ( model, Cmd.none )
 
-        ItemReceived (Ok item) ->
-            ( { model | todos = Todos.insertItem item model.todos }, Cmd.none )
+        TaskReceived (Ok task) ->
+            ( { model | todos = Tasks.insertTask task model.todos }, Cmd.none )
 
-        ItemReceived (Err _) ->
+        TaskReceived (Err _) ->
             -- for this Demo we ignore communication errors - sorry
             ( model, Cmd.none )
 
@@ -287,7 +288,7 @@ viewHeader model =
 -}
 viewMain : Model -> Html Msg
 viewMain model =
-    if Todos.isEmpty model.todos then
+    if Tasks.isEmpty model.todos then
         H.text ""
 
     else
@@ -297,7 +298,7 @@ viewMain model =
                 [ Attr.id "toggle-all"
                 , Attr.class "toggle-all"
                 , Attr.type_ "checkbox"
-                , Attr.checked (Todos.allCompleted model.todos)
+                , Attr.checked (Tasks.allCompleted model.todos)
                 , Ev.onCheck ToggleAll
                 ]
                 []
@@ -305,24 +306,24 @@ viewMain model =
                 [ Attr.for "toggle-all" ]
                 [ H.text "Mark all as complete" ]
 
-            -- li-items with class completed (if it is), containing viewItem or editItem
+            -- li-tasks with class completed (if it is), containing viewTask or editTask
             , H.ul
                 [ Attr.class "todo-list" ]
-                (filtered model.activeFilter model.todos |> List.map (viewItem model.editingItem))
+                (filtered model.activeFilter model.todos |> List.map (viewTask model.editingTask))
             ]
 
 
-{-| should display an item
+{-| should display an task
 -}
-viewItem : Maybe { id : Todos.Id, text : String } -> Todos.Item -> Html Msg
-viewItem editing item =
+viewTask : Maybe { id : Task.Id, text : String } -> Task -> Html Msg
+viewTask editing task =
     let
         isEditing =
-            Maybe.map .id editing == Just item.id
+            Maybe.map .id editing == Just task.id
     in
     H.li
         [ Attr.classList
-            [ ( "completed", item.completed )
+            [ ( "completed", task.completed )
             , ( "editing", isEditing )
             ]
         ]
@@ -331,23 +332,23 @@ viewItem editing item =
             [ H.input
                 [ Attr.class "toggle"
                 , Attr.type_ "checkbox"
-                , Attr.checked item.completed
-                , Ev.onCheck (CheckItem item.id)
+                , Attr.checked task.completed
+                , Ev.onCheck (CheckTask task.id)
                 ]
                 []
             , H.label
-                [ Ev.onDoubleClick (EditItem item)
+                [ Ev.onDoubleClick (EditTask task)
                 ]
-                [ H.text item.text ]
+                [ H.text task.text ]
             , H.button
                 [ Attr.class "destroy"
-                , Ev.onClick (DeleteItem item.id)
+                , Ev.onClick (DeleteTask task.id)
                 ]
                 []
             ]
         , H.input
             [ Attr.class "edit"
-            , Attr.id ("edit_" ++ Todos.idToString item.id)
+            , Attr.id ("edit_" ++ Task.idToString task.id)
             , Attr.value (Maybe.map .text editing |> Maybe.withDefault "")
             , Ev.onInput UpdateEditText
             , onFinish FinishEdit CancelEdit
@@ -361,7 +362,7 @@ viewItem editing item =
 -}
 viewFooter : Model -> Html Msg
 viewFooter model =
-    if Todos.isEmpty model.todos then
+    if Tasks.isEmpty model.todos then
         H.text ""
 
     else
@@ -369,7 +370,7 @@ viewFooter model =
             [ Attr.class "footer" ]
             [ H.span [ Attr.class "todo-count" ]
                 [ H.strong [] [ H.text (String.fromInt (model.todos |> activeCount)) ]
-                , H.text " item left"
+                , H.text " task left"
                 ]
             , H.ul [ Attr.class "filters" ]
                 [ H.li []

@@ -3,7 +3,7 @@ module Models.Task exposing (Id, Task, decoder, encode, encodeId, idDecoder, idF
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
-import Models.List as List
+import Models.TaskList as TaskList exposing (TaskList)
 
 
 type alias Task =
@@ -22,13 +22,13 @@ decoder =
         (Decode.field "finished" Decode.bool)
 
 
-encode : List.Id -> Task -> Value
+encode : TaskList.Id -> Task -> Value
 encode listId item =
     Encode.object
         [ ( "id", encodeId item.id )
         , ( "text", Encode.string item.text )
         , ( "finished", Encode.bool item.completed )
-        , ( "listId", List.encodeId listId )
+        , ( "listId", TaskList.encodeId listId )
         ]
 
 
