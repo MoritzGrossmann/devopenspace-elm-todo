@@ -33,11 +33,12 @@ type alias Session =
 type Login
     = LoggedIn String
     | NotLoggedIn
+    | NotQueried
 
 
 init : Flags -> Nav.Key -> ( Session, Cmd msg )
 init flags key =
-    ( Session flags key NotLoggedIn
+    ( Session flags key NotQueried
     , Cmd.none
     )
 
@@ -114,4 +115,7 @@ authHeader session =
             ]
 
         NotLoggedIn ->
+            []
+
+        NotQueried ->
             []

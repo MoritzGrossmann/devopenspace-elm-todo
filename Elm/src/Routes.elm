@@ -37,7 +37,7 @@ routeToUrlString baseUrl targetRoute =
                         Completed ->
                             Just "completed"
             in
-            buildUrl baseUrl [ "lists", TaskList.idToString id ] [] fragment
+            buildUrl baseUrl [ "list", TaskList.idToString id ] [] fragment
 
         Lists ->
             buildUrl baseUrl [ "lists" ] [] Nothing
@@ -70,7 +70,7 @@ route baseUrl =
                 |> Maybe.withDefault All
     in
     UrlP.oneOf
-        [ UrlP.map List (basePart </> UrlP.s "lists" </> UrlP.map TaskList.idFromInt UrlP.int </> UrlP.fragment filterParser)
+        [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.map TaskList.idFromInt UrlP.int </> UrlP.fragment filterParser)
         , UrlP.map Lists (basePart </> UrlP.s "lists")
         , UrlP.map Login (basePart </> UrlP.s "login")
         ]

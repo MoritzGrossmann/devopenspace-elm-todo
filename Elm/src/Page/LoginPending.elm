@@ -1,5 +1,6 @@
 module Page.LoginPending exposing (Model, Msg, init, subscriptions, update, view)
 
+import Debug
 import Html as H exposing (Html)
 import LocalStorage
 import Routes exposing (Route)
@@ -41,7 +42,9 @@ update msg model =
 
         GotLocalStorageItem ( key, Nothing ) ->
             if key == LocalStorage.authorizationKey then
-                ( model, Cmd.map model.map (Session.navigateTo model Routes.Login) )
+                ( { model | session = Session.updateLogin model.session Session.NotLoggedIn }
+                , Cmd.map model.map (Session.navigateTo model Routes.Login)
+                )
 
             else
                 ( model, Cmd.none )

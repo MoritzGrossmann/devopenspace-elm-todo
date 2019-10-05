@@ -39,11 +39,11 @@ init flags location key =
                 Nothing ->
                     let
                         ( initModel, initCmd ) =
-                            initPage session Routes.Login
+                            initPage session Routes.Lists
                     in
                     ( initModel
                     , Cmd.batch
-                        [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Login)
+                        [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Lists)
                         , initCmd
                         ]
                     )
@@ -74,7 +74,7 @@ type Msg
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
 initPage session route =
-    if session.login == NotLoggedIn && route /= Routes.Login then
+    if (session.login == NotQueried || session.login == NotLoggedIn) && route /= Routes.Login then
         let
             ( pageModel, pageCmd ) =
                 LoginPending.init LoginPendingMsg session (Just route)
@@ -126,7 +126,7 @@ update msg model =
                 NotLoggedIn ->
                     initPage (withSession identity model) Routes.Login
 
-                LoggedIn _ ->
+                _ ->
                     let
                         route =
                             Routes.locationToRoute (getFlags model).baseUrlPath url
@@ -136,7 +136,11 @@ update msg model =
                             initPage (withSession identity model) r
 
                         Nothing ->
-                            initPage (withSession identity model) Routes.Lists
+                            let
+                                ( page, pageCmd ) =
+                                    initPage (withSession identity model) Routes.Lists
+                            in
+                            ( page, Cmd.batch [ pageCmd, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) ] )
 
         ListMsg pageMsg ->
             updateList pageMsg model
