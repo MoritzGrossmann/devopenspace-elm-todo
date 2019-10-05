@@ -2,13 +2,14 @@ module Routes exposing (Route(..), locationToRoute, routeToUrlString)
 
 import Components.Todos exposing (Filter(..))
 import Flags exposing (BaseUrlPath, buildUrl)
+import Models.List as List
 import Url exposing (Url)
 import Url.Parser as UrlP exposing ((</>), Parser)
 
 
 type Route
     = Login
-    | List Int Filter
+    | List List.Id Filter
     | Lists
 
 
@@ -36,7 +37,7 @@ routeToUrlString baseUrl targetRoute =
                         Completed ->
                             Just "completed"
             in
-            buildUrl baseUrl [ "lists", id |> String.fromInt ] [] fragment
+            buildUrl baseUrl [ "lists", List.idToString id ] [] fragment
 
         Lists ->
             buildUrl baseUrl [ "lists" ] [] Nothing
@@ -69,7 +70,7 @@ route baseUrl =
                 |> Maybe.withDefault All
     in
     UrlP.oneOf
-        [ UrlP.map List (basePart </> UrlP.s "lists" </> UrlP.int </> UrlP.fragment filterParser)
+        [ UrlP.map List (basePart </> UrlP.s "lists" </> UrlP.map List.idFromInt UrlP.int </> UrlP.fragment filterParser)
         , UrlP.map Lists (basePart </> UrlP.s "lists")
         , UrlP.map Login (basePart </> UrlP.s "login")
         ]

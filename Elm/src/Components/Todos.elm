@@ -24,6 +24,7 @@ module Components.Todos exposing
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
+import Models.List as List
 
 
 type Filter
@@ -54,13 +55,13 @@ itemDecoder =
         (Decode.field "finished" Decode.bool)
 
 
-encodeItem : Item -> Int -> Value
-encodeItem item listId =
+encodeItem : List.Id -> Item -> Value
+encodeItem listId item =
     Encode.object
         [ ( "id", encodeId item.id )
         , ( "text", Encode.string item.text )
         , ( "finished", Encode.bool item.completed )
-        , ( "listId", Encode.int listId )
+        , ( "listId", List.encodeId listId )
         ]
 
 

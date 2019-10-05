@@ -25,7 +25,7 @@ byId session toMsg listId =
     Http.request
         { method = "GET"
         , headers = Session.authHeader session
-        , url = Session.makeApiUrl session [ "list", listId |> String.fromInt ] [] Nothing
+        , url = Session.makeApiUrl session [ "list", TodoList.idToString listId ] [] Nothing
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg TodoList.decodeMetaData
         , timeout = Nothing
@@ -38,7 +38,7 @@ delete session toMsg listId =
     Http.request
         { method = "DELETE"
         , headers = Session.authHeader session
-        , url = Session.makeApiUrl session [ "list", listId |> String.fromInt ] [] Nothing
+        , url = Session.makeApiUrl session [ "list", TodoList.idToString listId ] [] Nothing
         , body = Http.emptyBody
         , expect = Http.expectWhatever toMsg
         , timeout = Nothing

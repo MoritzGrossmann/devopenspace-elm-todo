@@ -20,7 +20,7 @@ type alias Page msg =
 
 type alias Model =
     { session : Session
-    , lists : WebData (Dict TodoList.Id TodoList.MetaData)
+    , lists : WebData (Dict Int TodoList.MetaData)
     , neueListe : String
     }
 
@@ -71,7 +71,7 @@ update msg model =
         NeueListeResult (Ok liste) ->
             ( { model
                 | neueListe = ""
-                , lists = model.lists |> RemoteData.map (\l -> RemoteData.Success (l |> Dict.insert liste.id liste)) |> RemoteData.withDefault model.lists
+                , lists = model.lists |> RemoteData.map (\listen -> RemoteData.Success (listen |> Dict.insert (TodoList.idToInt liste.id) liste)) |> RemoteData.withDefault model.lists
               }
             , Cmd.none
             )
@@ -83,7 +83,7 @@ update msg model =
             ( model, Api.Lists.delete model.session (DeleteListResult id) id )
 
         DeleteListResult id (Ok _) ->
-            ( { model | lists = model.lists |> RemoteData.map (\l -> l |> Dict.remove id) }, Cmd.none )
+            ( { model | lists = model.lists |> RemoteData.map (Dict.remove (TodoList.idToInt id)) }, Cmd.none )
 
         DeleteListResult _ (Err _) ->
             ( model, Cmd.none )
@@ -136,8 +136,8 @@ viewListItem session listItem =
         ]
 
 
-listToDict : List TodoList.MetaData -> Dict TodoList.Id TodoList.MetaData
+listToDict : List TodoList.MetaData -> Dict Int TodoList.MetaData
 listToDict list =
     list
-        |> List.map (\i -> ( i.id, i ))
+        |> List.map (\i -> ( TodoList.idToInt i.id, i ))
         |> Dict.fromList

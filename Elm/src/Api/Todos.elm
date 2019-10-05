@@ -4,7 +4,7 @@ import Components.Todos as Todos
 import Http
 import Json.Decode as Decode
 import Json.Encode as Enc
-import Models.List as TodoList
+import Models.List as TList
 import Session exposing (Session)
 
 
@@ -21,12 +21,12 @@ get session toMsg todoId =
         }
 
 
-getAll : Session -> (Result Http.Error (List Todos.Item) -> msg) -> TodoList.Id -> Cmd msg
-getAll session toMsg todoList =
+getAll : Session -> (Result Http.Error (List Todos.Item) -> msg) -> TList.Id -> Cmd msg
+getAll session toMsg listId =
     Http.request
         { method = "GET"
         , headers = Session.authHeader session
-        , url = Session.makeApiUrl session [ "list", todoList |> String.fromInt, "todos" ] [] Nothing
+        , url = Session.makeApiUrl session [ "list", TList.idToString listId, "todos" ] [] Nothing
         , expect = Http.expectJson toMsg (Decode.list Todos.itemDecoder)
         , body = Http.emptyBody
         , timeout = Nothing
@@ -34,13 +34,13 @@ getAll session toMsg todoList =
         }
 
 
-update : Session -> (Result Http.Error Todos.Item -> msg) -> TodoList.Id -> Todos.Item -> Cmd msg
+update : Session -> (Result Http.Error Todos.Item -> msg) -> TList.Id -> Todos.Item -> Cmd msg
 update session toMsg listId todoItem =
     Http.request
         { method = "put"
         , headers = Session.authHeader session
         , url = Session.makeApiUrl session [ "todos" ] [] Nothing
-        , body = Http.jsonBody (Todos.encodeItem todoItem listId)
+        , body = Http.jsonBody (Todos.encodeItem listId todoItem)
         , expect = Http.expectJson toMsg Todos.itemDecoder
         , timeout = Nothing
         , tracker = Nothing
@@ -60,12 +60,12 @@ delete session toMsg todo =
         }
 
 
-new : Session -> (Result Http.Error Todos.Item -> msg) -> TodoList.Id -> String -> Cmd msg
-new session toMsg todoList text =
+new : Session -> (Result Http.Error Todos.Item -> msg) -> TList.Id -> String -> Cmd msg
+new session toMsg listId text =
     Http.request
         { method = "POST"
         , headers = Session.authHeader session
-        , url = Session.makeApiUrl session [ "list", String.fromInt todoList, "todos" ] [] Nothing
+        , url = Session.makeApiUrl session [ "list", TList.idToString listId, "todos" ] [] Nothing
         , body = Http.jsonBody (Enc.string text)
         , expect = Http.expectJson toMsg Todos.itemDecoder
         , timeout = Nothing
