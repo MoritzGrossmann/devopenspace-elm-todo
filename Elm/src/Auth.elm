@@ -6,6 +6,7 @@ module Auth exposing
     , bearerAuthHeader
     , clearAuthentication
     , httpLogin
+    , httpRegister
     , init
     , isAuthenticated
     , isNotQueried
@@ -137,6 +138,29 @@ httpLogin flags toMsg username password =
             ]
         , url = makeApiUrl flags [ "user", "login" ] [] Nothing
         , body = Http.emptyBody
+        , expect = Http.expectJson mapJwt Json.string
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+httpRegister : Flags -> (Result Http.Error (ModelWithAuth m -> ModelWithAuth m) -> msg) -> String -> String -> Cmd msg
+httpRegister flags toMsg username password =
+    let
+        mapJwt =
+            toMsg << Result.map (AuthToken >> setAuthenticated)
+    in
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = makeApiUrl flags [ "user", "register" ] [] Nothing
+        , body =
+            Http.jsonBody
+                (Enc.object
+                    [ ( "name", Enc.string username )
+                    , ( "password", Enc.string password )
+                    ]
+                )
         , expect = Http.expectJson mapJwt Json.string
         , timeout = Nothing
         , tracker = Nothing
