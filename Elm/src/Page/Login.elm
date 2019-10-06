@@ -47,14 +47,18 @@ type Msg
 
 init : (Msg -> mainMsg) -> Session -> Maybe Route -> ( Model mainMsg, Cmd msg )
 init wrapMsg session transitionTo =
+    let
+        resetedSession =
+            Auth.clearAuthentication session
+    in
     ( { username = ""
       , password = ""
-      , session = session
+      , session = resetedSession
       , login = RemoteData.NotAsked
       , transitionTo = transitionTo
       , map = wrapMsg
       }
-    , Cmd.none
+    , Auth.updateLocalStorage resetedSession.authentication
     )
 
 

@@ -4,6 +4,7 @@ module Auth exposing
     , ModelWithAuth
     , basicAuthHeader
     , bearerAuthHeader
+    , clearAuthentication
     , httpLogin
     , init
     , isAuthenticated
