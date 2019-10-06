@@ -40,7 +40,7 @@ routeToUrlString baseUrl targetRoute =
             buildUrl baseUrl [ "list", TaskList.idToString id ] [] fragment
 
         Lists ->
-            buildUrl baseUrl [ "lists" ] [] Nothing
+            buildUrl baseUrl [] [] Nothing
 
 
 route : BaseUrlPath -> Parser (Route -> a) a
@@ -71,6 +71,6 @@ route baseUrl =
     in
     UrlP.oneOf
         [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.map TaskList.idFromInt UrlP.int </> UrlP.fragment filterParser)
-        , UrlP.map Lists (basePart </> UrlP.s "lists")
         , UrlP.map Login (basePart </> UrlP.s "login")
+        , UrlP.map Lists basePart
         ]
