@@ -9,10 +9,16 @@ window.initPorts = function (app) {
     }
   });
 
+  window.addEventListener("storage", function (e) {
+    if (app.ports.localStorageChanged) {
+      app.ports.localStorageChanged.send([e.key, e.newValue]);
+    }
+  });
+
   app.ports.request.subscribe(function (storageKey) {
     let value = localStorage.getItem(storageKey);
     if (app.ports.receive) {
-      app.ports.receive.send([storageKey, value])
+      app.ports.receive.send([storageKey, value]);
     }
   });
 }

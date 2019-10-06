@@ -3,6 +3,7 @@ module Main exposing (main)
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
+import LocalStorage
 import Page.Login as LoginPage
 import Page.LoginPending as LoginPending
 import Page.TaskList as TaskListPage
@@ -64,8 +65,10 @@ type Model
 
 
 type Msg
-    = UrlRequested UrlRequest
+    = NoOp
+    | UrlRequested UrlRequest
     | UrlChanged Url
+    | AuthorizationStoreChanged (Maybe String)
     | LoginMsg LoginPage.Msg
     | LoginPendingMsg LoginPending.Msg
     | ListMsg TaskListPage.Msg
@@ -108,6 +111,29 @@ initPage session route =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        AuthorizationStoreChanged newValue ->
+            let
+                newLogin =
+                    case newValue of
+                        Nothing ->
+                            Session.NotLoggedIn
+
+                        Just val ->
+                            Session.LoggedIn val
+
+                navCmd =
+                    case newLogin of
+                        Session.LoggedIn _ ->
+                            Cmd.none
+
+                        _ ->
+                            Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Login)
+            in
+            ( updateSession (\oldSession -> Session.updateLogin oldSession newLogin) model, navCmd )
+
         UrlRequested urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
@@ -235,18 +261,22 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    case model of
-        List listModel ->
-            TaskListPage.subscriptions listModel
+    let
+        pageSubs =
+            case model of
+                List listModel ->
+                    TaskListPage.subscriptions listModel
 
-        Login loginModel ->
-            LoginPage.subscriptions loginModel
+                Login loginModel ->
+                    LoginPage.subscriptions loginModel
 
-        Lists listsModel ->
-            TaskListsPage.subscriptions listsModel
+                Lists listsModel ->
+                    TaskListsPage.subscriptions listsModel
 
-        LoginPending loginPendingModel ->
-            LoginPending.subscriptions loginPendingModel
+                LoginPending loginPendingModel ->
+                    LoginPending.subscriptions loginPendingModel
+    in
+    Sub.batch [ pageSubs, LocalStorage.authorizationValueChanged NoOp AuthorizationStoreChanged ]
 
 
 getFlags : Model -> Flags
@@ -257,6 +287,22 @@ getFlags =
 getNavKey : Model -> Nav.Key
 getNavKey =
     withSession Session.getNavKey
+
+
+updateSession : (Session -> Session) -> Model -> Model
+updateSession upd model =
+    case model of
+        List page ->
+            List { page | session = upd page.session }
+
+        Login page ->
+            Login { page | session = upd page.session }
+
+        Lists page ->
+            Lists { page | session = upd page.session }
+
+        LoginPending page ->
+            LoginPending { page | session = upd page.session }
 
 
 withSession : (Session -> a) -> Model -> a
