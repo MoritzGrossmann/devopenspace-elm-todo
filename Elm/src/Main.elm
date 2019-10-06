@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Auth
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
@@ -9,7 +10,7 @@ import Page.LoginPending as LoginPending
 import Page.TaskList as TaskListPage
 import Page.TaskLists as TaskListsPage
 import Routes exposing (Route)
-import Session exposing (Login(..), Session, getNavKey)
+import Session exposing (Session, getNavKey)
 import Url exposing (Url)
 
 
@@ -68,7 +69,7 @@ type Msg
     = NoOp
     | UrlRequested UrlRequest
     | UrlChanged Url
-    | AuthorizationStoreChanged (Maybe String)
+    | AuthorizationStoreChanged (Session -> Session)
     | LoginMsg LoginPage.Msg
     | LoginPendingMsg LoginPending.Msg
     | ListMsg TaskListPage.Msg
@@ -77,7 +78,7 @@ type Msg
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
 initPage session route =
-    if (session.login == NotQueried || session.login == NotLoggedIn) && route /= Routes.Login then
+    if not (Auth.isAuthenticated session) && route /= Routes.Login then
         let
             ( pageModel, pageCmd ) =
                 LoginPending.init LoginPendingMsg session (Just route)
@@ -114,25 +115,19 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        AuthorizationStoreChanged newValue ->
+        AuthorizationStoreChanged updSession ->
             let
-                newLogin =
-                    case newValue of
-                        Nothing ->
-                            Session.NotLoggedIn
-
-                        Just val ->
-                            Session.LoggedIn val
+                newModel =
+                    updateSession updSession model
 
                 navCmd =
-                    case newLogin of
-                        Session.LoggedIn _ ->
-                            Cmd.none
+                    if withSession Auth.isAuthenticated newModel then
+                        Cmd.none
 
-                        _ ->
-                            Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Login)
+                    else
+                        Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Login)
             in
-            ( updateSession (\oldSession -> Session.updateLogin oldSession newLogin) model, navCmd )
+            ( newModel, navCmd )
 
         UrlRequested urlRequest ->
             case urlRequest of
@@ -148,25 +143,24 @@ update msg model =
                     ( model, Nav.load url )
 
         UrlChanged url ->
-            case (withSession identity model).login of
-                NotLoggedIn ->
-                    initPage (withSession identity model) Routes.Login
+            if not (withSession Auth.isAuthenticated model) then
+                initPage (withSession identity model) Routes.Login
 
-                _ ->
-                    let
-                        route =
-                            Routes.locationToRoute (getFlags model).baseUrlPath url
-                    in
-                    case route of
-                        Just r ->
-                            initPage (withSession identity model) r
+            else
+                let
+                    route =
+                        Routes.locationToRoute (getFlags model).baseUrlPath url
+                in
+                case route of
+                    Just r ->
+                        initPage (withSession identity model) r
 
-                        Nothing ->
-                            let
-                                ( page, pageCmd ) =
-                                    initPage (withSession identity model) Routes.Lists
-                            in
-                            ( page, Cmd.batch [ pageCmd, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) ] )
+                    Nothing ->
+                        let
+                            ( page, pageCmd ) =
+                                initPage (withSession identity model) Routes.Lists
+                        in
+                        ( page, Cmd.batch [ pageCmd, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) ] )
 
         ListMsg pageMsg ->
             updateList pageMsg model
@@ -276,7 +270,7 @@ subscriptions model =
                 LoginPending loginPendingModel ->
                     LoginPending.subscriptions loginPendingModel
     in
-    Sub.batch [ pageSubs, LocalStorage.authorizationValueChanged NoOp AuthorizationStoreChanged ]
+    Sub.batch [ pageSubs, Auth.watchLocalStorage NoOp AuthorizationStoreChanged ]
 
 
 getFlags : Model -> Flags

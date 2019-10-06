@@ -1,5 +1,6 @@
 module Api.Tasks exposing (delete, get, getAll, new, update)
 
+import Auth
 import Http
 import Json.Decode as Decode
 import Json.Encode as Enc
@@ -13,7 +14,7 @@ get : Session -> (Result Http.Error Task -> msg) -> Task.Id -> Cmd msg
 get session toMsg taskId =
     Http.request
         { method = "GET"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "todos", Task.idToString taskId ] [] Nothing
         , expect = Http.expectJson toMsg Task.decoder
         , body = Http.emptyBody
@@ -26,7 +27,7 @@ getAll : Session -> (Result Http.Error (List Task) -> msg) -> TaskList.Id -> Cmd
 getAll session toMsg listId =
     Http.request
         { method = "GET"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "list", TaskList.idToString listId, "todos" ] [] Nothing
         , expect = Http.expectJson toMsg (Decode.list Task.decoder)
         , body = Http.emptyBody
@@ -39,7 +40,7 @@ update : Session -> (Result Http.Error Task -> msg) -> TaskList.Id -> Task -> Cm
 update session toMsg listId task =
     Http.request
         { method = "put"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "todos" ] [] Nothing
         , body = Http.jsonBody (Task.encode listId task)
         , expect = Http.expectJson toMsg Task.decoder
@@ -52,7 +53,7 @@ delete : Session -> (Result Http.Error (List Task) -> msg) -> Task.Id -> Cmd msg
 delete session toMsg task =
     Http.request
         { method = "delete"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "todos", Task.idToString task ] [] Nothing
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg (Decode.list Task.decoder)
@@ -65,7 +66,7 @@ new : Session -> (Result Http.Error Task -> msg) -> TaskList.Id -> String -> Cmd
 new session toMsg listId text =
     Http.request
         { method = "POST"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "list", TaskList.idToString listId, "todos" ] [] Nothing
         , body = Http.jsonBody (Enc.string text)
         , expect = Http.expectJson toMsg Task.decoder

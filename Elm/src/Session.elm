@@ -1,7 +1,5 @@
 module Session exposing
-    ( Login(..)
-    , Session
-    , authHeader
+    ( Session
     , getFlags
     , getNavKey
     , getUrl
@@ -12,9 +10,9 @@ module Session exposing
     , replaceUrl
     , routeUrl
     , sessionRouteUrl
-    , updateLogin
     )
 
+import Auth
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import Http
@@ -26,26 +24,15 @@ import Url.Builder as Url
 type alias Session =
     { flags : Flags
     , navKey : Nav.Key
-    , login : Login
+    , authentication : Auth.Authentication
     }
-
-
-type Login
-    = LoggedIn String
-    | NotLoggedIn
-    | NotQueried
 
 
 init : Flags -> Nav.Key -> ( Session, Cmd msg )
 init flags key =
-    ( Session flags key NotQueried
+    ( Session flags key Auth.init
     , Cmd.none
     )
-
-
-updateLogin : Session -> Login -> Session
-updateLogin session login =
-    { session | login = login }
 
 
 makeSessionUrl : Session -> List String -> List Url.QueryParameter -> Maybe String -> String
@@ -105,17 +92,3 @@ routeUrl model =
 sessionRouteUrl : Session -> Routes.Route -> String
 sessionRouteUrl session route =
     Routes.routeToUrlString session.flags.baseUrlPath route
-
-
-authHeader : Session -> List Http.Header
-authHeader session =
-    case session.login of
-        LoggedIn token ->
-            [ Http.header "Authorization" (String.interpolate "Bearer {0}" [ token ])
-            ]
-
-        NotLoggedIn ->
-            []
-
-        NotQueried ->
-            []

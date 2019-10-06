@@ -1,5 +1,6 @@
 module Api.Lists exposing (add, all, byId, delete)
 
+import Auth
 import Http
 import Json.Decode as Json
 import Json.Encode as Enc
@@ -11,7 +12,7 @@ all : Session -> (Result Http.Error (List TaskList) -> msg) -> Cmd msg
 all session toMsg =
     Http.request
         { method = "GET"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "list" ] [] Nothing
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg (Json.list TaskList.decoder)
@@ -24,7 +25,7 @@ byId : Session -> (Result Http.Error TaskList -> msg) -> TaskList.Id -> Cmd msg
 byId session toMsg listId =
     Http.request
         { method = "GET"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "list", TaskList.idToString listId ] [] Nothing
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg TaskList.decoder
@@ -37,7 +38,7 @@ delete : Session -> (Result Http.Error () -> msg) -> TaskList.Id -> Cmd msg
 delete session toMsg listId =
     Http.request
         { method = "DELETE"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "list", TaskList.idToString listId ] [] Nothing
         , body = Http.emptyBody
         , expect = Http.expectWhatever toMsg
@@ -50,7 +51,7 @@ add : Session -> (Result Http.Error TaskList -> msg) -> String -> Cmd msg
 add session toMsg name =
     Http.request
         { method = "POST"
-        , headers = Session.authHeader session
+        , headers = Auth.bearerAuthHeader session
         , url = Session.makeApiUrl session [ "list" ] [] Nothing
         , body = Http.jsonBody (name |> Enc.string)
         , expect = Http.expectJson toMsg TaskList.decoder

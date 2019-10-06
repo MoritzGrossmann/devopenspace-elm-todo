@@ -10,7 +10,7 @@ module Page.Login exposing
 ----------------------------------------------------------------------------
 -- Model
 
-import Api.Session
+import Auth
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
@@ -19,14 +19,14 @@ import Json.Encode as Enc
 import LocalStorage
 import RemoteData exposing (WebData)
 import Routes exposing (Route)
-import Session exposing (Login(..), Session)
+import Session exposing (Session)
 
 
 type alias Model mainMsg =
     { username : String
     , password : String
     , session : Session
-    , token : WebData String
+    , login : WebData ()
     , transitionTo : Maybe Route
     , map : Msg -> mainMsg
     }
@@ -42,7 +42,7 @@ type Msg
     | UpdateUsername String
     | UpdatePassword String
     | Submit
-    | LoginResult (Result Http.Error String)
+    | LoginResult (Result Http.Error (Session -> Session))
 
 
 init : (Msg -> mainMsg) -> Session -> Maybe Route -> ( Model mainMsg, Cmd msg )
@@ -50,7 +50,7 @@ init wrapMsg session transitionTo =
     ( { username = ""
       , password = ""
       , session = session
-      , token = RemoteData.NotAsked
+      , login = RemoteData.NotAsked
       , transitionTo = transitionTo
       , map = wrapMsg
       }
@@ -71,26 +71,30 @@ update msg model =
             ( { model | password = password }, Cmd.none )
 
         Submit ->
-            ( { model | token = RemoteData.Loading }
-            , Cmd.map model.map (Api.Session.post model.session LoginResult model.username model.password)
+            ( { model | login = RemoteData.Loading }
+            , Cmd.map model.map (Auth.httpLogin model.session.flags LoginResult model.username model.password)
             )
 
-        LoginResult result ->
-            case result of
-                Ok token ->
+        LoginResult res ->
+            case res of
+                Ok updateSession ->
+                    let
+                        newSession =
+                            updateSession model.session
+                    in
                     ( { model
-                        | token = RemoteData.Success token
-                        , session = Session.updateLogin model.session (LoggedIn token)
+                        | session = newSession
+                        , login = RemoteData.succeed ()
                       }
                     , Cmd.batch
                         [ Session.navigateTo model (model.transitionTo |> Maybe.withDefault Routes.Lists)
-                        , LocalStorage.store ( LocalStorage.authorizationKey, Just (token |> Enc.string) )
+                        , Auth.updateLocalStorage newSession.authentication
                         ]
                         |> Cmd.map model.map
                     )
 
                 Err error ->
-                    ( { model | token = RemoteData.Failure error }, Cmd.none )
+                    ( { model | login = RemoteData.Failure error }, Cmd.none )
 
 
 subscriptions : Model mainMsg -> Sub mainMsg
@@ -106,7 +110,7 @@ view model =
         , H.form [ Ev.onSubmit Submit ]
             [ H.input
                 [ Attr.class "new-todo"
-                , Attr.disabled (model.token |> RemoteData.isLoading)
+                , Attr.disabled (RemoteData.isLoading model.login)
                 , Attr.placeholder "username"
                 , Attr.autofocus True
                 , Attr.value model.username
@@ -115,7 +119,7 @@ view model =
                 []
             , H.input
                 [ Attr.class "new-todo"
-                , Attr.disabled (model.token |> RemoteData.isLoading)
+                , Attr.disabled (RemoteData.isLoading model.login)
                 , Attr.placeholder "password"
                 , Attr.value model.password
                 , Attr.type_ "password"

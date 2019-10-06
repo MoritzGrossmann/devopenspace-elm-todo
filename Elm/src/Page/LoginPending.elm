@@ -1,5 +1,6 @@
 module Page.LoginPending exposing (Model, Msg, init, subscriptions, update, view)
 
+import Auth
 import Debug
 import Html as H exposing (Html)
 import LocalStorage
@@ -20,39 +21,39 @@ init mapMsg session route =
       , route = route
       , map = mapMsg
       }
-    , Cmd.map mapMsg (LocalStorage.request LocalStorage.authorizationKey)
+    , Auth.requestLocalStorageAuth
     )
 
 
 type Msg
-    = GotLocalStorageItem ( LocalStorage.StorageKey, Maybe String )
+    = NoOp
+    | LocalStorageAuthReceived (Session -> Session)
 
 
 update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
-        GotLocalStorageItem ( key, Just token ) ->
-            if key == LocalStorage.authorizationKey then
-                ( { model | session = Session.updateLogin model.session (Session.LoggedIn token) }
-                , Cmd.map model.map (Session.navigateTo model (model.route |> Maybe.withDefault Routes.Lists))
-                )
+        NoOp ->
+            ( model, Cmd.none )
 
-            else
-                ( model, Cmd.none )
+        LocalStorageAuthReceived updateSession ->
+            let
+                newSession =
+                    updateSession model.session
 
-        GotLocalStorageItem ( key, Nothing ) ->
-            if key == LocalStorage.authorizationKey then
-                ( { model | session = Session.updateLogin model.session Session.NotLoggedIn }
-                , Cmd.map model.map (Session.navigateTo model Routes.Login)
-                )
+                navCmd =
+                    if Auth.isAuthenticated newSession then
+                        Cmd.map model.map (Session.navigateTo model (model.route |> Maybe.withDefault Routes.Lists))
 
-            else
-                ( model, Cmd.none )
+                    else
+                        Cmd.map model.map (Session.navigateTo model (model.route |> Maybe.withDefault Routes.Login))
+            in
+            ( { model | session = newSession }, navCmd )
 
 
 subscriptions : Model mainMsg -> Sub mainMsg
 subscriptions model =
-    Sub.map model.map (LocalStorage.receive GotLocalStorageItem)
+    Sub.map model.map (Auth.watchLocalStorage NoOp LocalStorageAuthReceived)
 
 
 view : Model msg -> Html msg
