@@ -120,11 +120,9 @@ resetStoreToken =
     LocalStorage.store ( LocalStorage.authorizationKey, Nothing )
 
 
-
--- | Note you should use 'updateLocalStorage' after receiving an anwer to this to make sure the state is stored correctly
--- sadly I cannot do this for you as I cannot chain Cmds in Elm right now
-
-
+{-| Note you should use 'updateLocalStorage' after receiving an anwer to this to make sure the state is stored correctly
+sadly I cannot do this for you as I cannot chain Cmds in Elm right now
+-}
 httpLogin : Flags -> (Result Http.Error (ModelWithAuth m -> ModelWithAuth m) -> msg) -> String -> String -> Cmd msg
 httpLogin flags toMsg username password =
     let
