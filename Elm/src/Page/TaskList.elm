@@ -3,6 +3,7 @@ module Page.TaskList exposing (Model, Msg, init, subscriptions, update, view)
 import Api.Task as Api
 import Api.TaskList as ApiList
 import Browser.Dom as Dom
+import Components.Navbar as Navbar
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
@@ -263,11 +264,14 @@ view model =
 
 viewTaskApp : Model mainMsg -> Html Msg
 viewTaskApp model =
-    H.section
-        [ Attr.class "todoapp" ]
-        [ viewHeader model
-        , viewMain model
-        , viewFooter model
+    H.div []
+        [ Navbar.view model.session
+        , H.section
+            [ Attr.class "todoapp" ]
+            [ viewHeader model
+            , viewMain model
+            , viewFooter model
+            ]
         ]
 
 

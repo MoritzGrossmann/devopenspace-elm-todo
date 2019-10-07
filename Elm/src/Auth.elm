@@ -1,8 +1,9 @@
 module Auth exposing
-    ( AuthToken, Authentication(..), ModelWithAuth
+    ( AuthToken(..), Authentication(..), ModelWithAuth
     , init, isAuthenticated, isNotQueried, clearAuthentication
     , requestLocalStorageAuth, watchLocalStorage, updateLocalStorage
     , httpLogin, httpRegister, basicAuthHeader, bearerAuthHeader
+    , JwtObject, jwtDecoder
     )
 
 {-| dieses Modul fast Funktionalitäten im Zusammenhang mit der
@@ -51,6 +52,7 @@ import LocalStorage as LS
 import Navigation.AppUrl as AppUrl
 import String.Interpolate as String
 import Url.Builder as Url
+import Jwt
 
 
 {-| einfacher Wrapper um ein JWT Token wie es aus dem LocalStorage oder vom
@@ -335,3 +337,19 @@ basicAuthHeader username password =
             String.interpolate "{0}:{1}" [ username, password ]
     in
     Http.header "Authorization" (String.interpolate "Basic {0}" [ Base64.encode up ])
+
+
+jwtDecoder : Json.Decoder JwtObject
+jwtDecoder =
+    Json.map JwtObject
+        (Json.field "dat" (Json.map JwtDatObject (Json.field "auName" Json.string)))
+
+type alias JwtObject =
+    { dat : 
+        JwtDatObject
+    }
+
+type alias JwtDatObject =
+    {
+        auName : String 
+    }
