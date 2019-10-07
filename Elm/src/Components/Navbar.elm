@@ -12,7 +12,7 @@ import Session exposing (Session)
 view : Session -> Html msg
 view session =
     H.div [ Attr.class "navbar" ]
-        [ H.h2 [] [ H.text ("Hallo " ++ (Auth.getUserName session)) ]
+        [ H.h2 [] [ H.text ("Hallo " ++ ((Auth.getUserName session) |> Maybe.withDefault "")) ]
         , H.span [ Attr.class "logout-btn" ]
             [ H.a [ Attr.href (Routes.routeToUrlString session.flags.baseUrlPath Routes.Login) ]
                 [ H.text "logout" ]
