@@ -1,64 +1,61 @@
-module Page.LoginPending exposing (Model, Msg, Page, init, subscriptions, update)
+module Page.LoginPending exposing (Model, Msg, init, subscriptions, update, view)
 
+import Auth
+import Debug
 import Html as H exposing (Html)
 import LocalStorage
-import Page
-import Routes exposing (Route)
+import Navigation.Routes as Routes exposing (Route)
 import Session exposing (Session)
 
 
-type alias Page msg =
-    Page.Page msg Model Msg
-
-
-type alias Model =
+type alias Model mainMsg =
     { route : Maybe Route
     , session : Session
+    , map : Msg -> mainMsg
     }
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> Maybe Route -> ( Page msg, Cmd msg )
-init wrap session route =
-    let
-        pageInit _ =
-            ( { session = session
-              , route = route
-              }
-            , LocalStorage.request LocalStorage.authorizationKey
-            )
-    in
-    Page.init wrap pageInit view update subscriptions session
+init : (Msg -> mainMsg) -> Session -> Maybe Route -> ( Model mainMsg, Cmd mainMsg )
+init mapMsg session route =
+    ( { session = session
+      , route = route
+      , map = mapMsg
+      }
+    , Auth.requestLocalStorageAuth
+    )
 
 
 type Msg
-    = GotLocalStorageItem ( LocalStorage.StorageKey, Maybe String )
+    = NoOp
+    | LocalStorageAuthReceived (Session -> Session)
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
-        GotLocalStorageItem ( key, Just token ) ->
-            if key == LocalStorage.authorizationKey then
-                ( { model | session = Session.updateLogin model.session (Session.LoggedIn token) }
-                , Session.navigateTo model (model.route |> Maybe.withDefault Routes.Lists)
-                )
+        NoOp ->
+            ( model, Cmd.none )
 
-            else
-                ( model, Cmd.none )
+        LocalStorageAuthReceived updateSession ->
+            let
+                newSession =
+                    updateSession model.session
 
-        GotLocalStorageItem ( key, Nothing ) ->
-            if key == LocalStorage.authorizationKey then
-                ( model, Session.navigateTo model Routes.Login )
+                navCmd =
+                    if Auth.isAuthenticated newSession then
+                        Cmd.map model.map (Routes.navigateTo model.session (model.route |> Maybe.withDefault Routes.Lists))
 
-            else
-                ( model, Cmd.none )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    LocalStorage.receive GotLocalStorageItem
+                    else
+                        Cmd.map model.map (Routes.navigateTo model.session (model.route |> Maybe.withDefault Routes.Login))
+            in
+            ( { model | session = newSession }, navCmd )
 
 
-view : Model -> Html Msg
+subscriptions : Model mainMsg -> Sub mainMsg
+subscriptions model =
+    Sub.map model.map (Auth.watchLocalStorage NoOp LocalStorageAuthReceived)
+
+
+view : Model msg -> Html msg
 view _ =
     H.div [] [ H.text "login pending..." ]

@@ -1,18 +1,10 @@
-port module LocalStorage exposing (StorageKey, authorizationKey, receive, request, store)
+port module LocalStorage exposing (StorageKey, receive, request, store)
 
 import Json.Decode exposing (Value)
 
 
 type alias StorageKey =
     String
-
-
-authorizationKey : String
-authorizationKey =
-    "Authorization"
-
-
-port onChange : (Value -> msg) -> Sub msg
 
 
 port store : ( StorageKey, Maybe Value ) -> Cmd msg

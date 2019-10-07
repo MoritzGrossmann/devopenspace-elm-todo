@@ -1,63 +1,66 @@
-module Page.Lists exposing (Model, Msg(..), Page, init, update, view)
+module Page.TaskLists exposing (Model, Msg, init, subscriptions, update, view)
 
-import Api.Lists
-import Components.Todos exposing (Filter(..))
+import Api.TaskList as Api
 import Dict exposing (Dict)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
-import Models.List as TodoList
-import Page
+import Models.TaskList as TaskList exposing (TaskList)
+import Models.TaskLists as TaskLists exposing (TaskLists)
+import Models.Tasks exposing (Filter(..))
+import Navigation.Routes as Routes
 import RemoteData exposing (WebData)
-import Routes
 import Session exposing (Session)
 
 
-type alias Page msg =
-    Page.Page msg Model Msg
-
-
-type alias Model =
+type alias Model mainMsg =
     { session : Session
-    , lists : WebData (Dict TodoList.Id TodoList.MetaData)
+    , map : Msg -> mainMsg
+    , lists : WebData TaskLists
     , neueListe : String
     }
 
 
-init : (Page.PageMsg Msg -> msg) -> Session -> ( Page msg, Cmd msg )
+init : (Msg -> mainMsg) -> Session -> ( Model mainMsg, Cmd mainMsg )
 init wrap session =
-    let
-        pageInit _ =
-            ( { session = session
-              , lists = RemoteData.Loading
-              , neueListe = ""
-              }
-            , Api.Lists.all session ListResult
-            )
-    in
-    Page.init wrap pageInit view update (always Sub.none) session
+    ( { session = session
+      , map = wrap
+      , lists = RemoteData.Loading
+      , neueListe = ""
+      }
+    , Api.all session ListResult
+        |> Cmd.map wrap
+    )
+
+
+subscriptions : Model mainMsg -> Sub mainMsg
+subscriptions _ =
+    Sub.none
 
 
 type Msg
-    = ListResult (Result Http.Error (List TodoList.MetaData))
+    = ListResult (Result Http.Error (List TaskList))
     | UpdateNeueListe String
     | SubmitNeueListe
-    | NeueListeResult (Result Http.Error TodoList.MetaData)
-    | DeleteList TodoList.Id
-    | DeleteListResult TodoList.Id (Result Http.Error ())
+    | NeueListeResult (Result Http.Error TaskList)
+    | DeleteList TaskList.Id
+    | DeleteListResult TaskList.Id (Result Http.Error ())
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
         ListResult (Ok lists) ->
-            ( { model | lists = RemoteData.Success (lists |> listToDict) }, Cmd.none )
+            ( { model | lists = RemoteData.Success (TaskLists.fromList lists) }, Cmd.none )
 
         ListResult (Err httpError) ->
             case httpError of
                 Http.BadStatus 401 ->
-                    ( { model | lists = RemoteData.Failure httpError }, Session.navigateTo model Routes.Login )
+                    ( { model | lists = RemoteData.Failure httpError }
+                    , Routes.navigateTo model.session Routes.Login
+                        |> Cmd.map model.map
+                    )
 
                 _ ->
                     ( { model | lists = RemoteData.Failure httpError }, Cmd.none )
@@ -66,12 +69,17 @@ update msg model =
             ( { model | neueListe = string }, Cmd.none )
 
         SubmitNeueListe ->
-            ( model, Api.Lists.add model.session NeueListeResult model.neueListe )
+            ( model
+            , Api.add model.session NeueListeResult model.neueListe
+                |> Cmd.map model.map
+            )
 
         NeueListeResult (Ok liste) ->
             ( { model
                 | neueListe = ""
-                , lists = model.lists |> RemoteData.map (\l -> RemoteData.Success (l |> Dict.insert liste.id liste)) |> RemoteData.withDefault model.lists
+                , lists =
+                    model.lists
+                        |> RemoteData.map (TaskLists.insertTaskList liste)
               }
             , Cmd.none
             )
@@ -80,16 +88,25 @@ update msg model =
             ( model, Cmd.none )
 
         DeleteList id ->
-            ( model, Api.Lists.delete model.session (DeleteListResult id) id )
+            ( model
+            , Api.delete model.session (DeleteListResult id) id
+                |> Cmd.map model.map
+            )
 
         DeleteListResult id (Ok _) ->
-            ( { model | lists = model.lists |> RemoteData.map (\l -> l |> Dict.remove id) }, Cmd.none )
+            ( { model
+                | lists =
+                    model.lists
+                        |> RemoteData.map (TaskLists.deleteTaskList id)
+              }
+            , Cmd.none
+            )
 
         DeleteListResult _ (Err _) ->
             ( model, Cmd.none )
 
 
-view : Model -> Html Msg
+view : Model mainMsg -> Html mainMsg
 view model =
     H.section
         [ Attr.class "todoapp" ]
@@ -109,13 +126,14 @@ view model =
             [ Attr.class "todo-list" ]
             (model.lists
                 |> RemoteData.map
-                    (\dict -> dict |> Dict.toList |> List.map (\( _, m ) -> viewListItem model.session m))
+                    (TaskLists.allTaskLists >> List.map (viewListItem model.session))
                 |> RemoteData.withDefault []
             )
         ]
+        |> H.map model.map
 
 
-viewListItem : Session -> TodoList.MetaData -> Html Msg
+viewListItem : Session -> TaskList -> Html Msg
 viewListItem session listItem =
     H.li [ Attr.class "todo" ]
         [ H.div
@@ -136,8 +154,8 @@ viewListItem session listItem =
         ]
 
 
-listToDict : List TodoList.MetaData -> Dict TodoList.Id TodoList.MetaData
+listToDict : List TaskList -> Dict Int TaskList
 listToDict list =
     list
-        |> List.map (\i -> ( i.id, i ))
+        |> List.map (\i -> ( TaskList.idToInt i.id, i ))
         |> Dict.fromList

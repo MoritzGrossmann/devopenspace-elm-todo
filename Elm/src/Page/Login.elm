@@ -1,7 +1,6 @@
 module Page.Login exposing
     ( Model
-    , Msg(..)
-    , Page
+    , Msg
     , init
     , subscriptions
     , update
@@ -11,25 +10,25 @@ module Page.Login exposing
 ----------------------------------------------------------------------------
 -- Model
 
-import Api.Session
+import Auth
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Encode as Enc
 import LocalStorage
-import Page
+import Navigation.Routes as Routes exposing (Route)
 import RemoteData exposing (WebData)
-import Routes exposing (Route)
-import Session exposing (Login(..), Session)
+import Session exposing (Session)
 
 
-type alias Model =
+type alias Model mainMsg =
     { username : String
     , password : String
     , session : Session
-    , token : WebData String
+    , login : WebData ()
     , transitionTo : Maybe Route
+    , map : Msg -> mainMsg
     }
 
 
@@ -43,23 +42,27 @@ type Msg
     | UpdateUsername String
     | UpdatePassword String
     | Submit
-    | LoginResult (Result Http.Error String)
+    | LoginResult (Result Http.Error (Session -> Session))
 
 
-type alias Page msg =
-    Page.Page msg Model Msg
-
-
-init : (Page.PageMsg Msg -> msg) -> Session -> Maybe Route -> ( Page msg, Cmd msg )
+init : (Msg -> mainMsg) -> Session -> Maybe Route -> ( Model mainMsg, Cmd msg )
 init wrapMsg session transitionTo =
     let
-        pageInit _ =
-            ( { username = "", password = "", session = session, token = RemoteData.NotAsked, transitionTo = transitionTo }, Cmd.none )
+        resetedSession =
+            Auth.clearAuthentication session
     in
-    Page.init wrapMsg pageInit view update subscriptions session
+    ( { username = ""
+      , password = ""
+      , session = resetedSession
+      , login = RemoteData.NotAsked
+      , transitionTo = transitionTo
+      , map = wrapMsg
+      }
+    , Auth.updateLocalStorage resetedSession.authentication
+    )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
 update msg model =
     case msg of
         NoOp ->
@@ -72,31 +75,38 @@ update msg model =
             ( { model | password = password }, Cmd.none )
 
         Submit ->
-            ( { model | token = RemoteData.Loading }, Api.Session.post model.session LoginResult model.username model.password )
+            ( { model | login = RemoteData.Loading }
+            , Cmd.map model.map (Auth.httpLogin model.session.flags LoginResult model.username model.password)
+            )
 
-        LoginResult result ->
-            case result of
-                Ok token ->
+        LoginResult res ->
+            case res of
+                Ok updateSession ->
+                    let
+                        newSession =
+                            updateSession model.session
+                    in
                     ( { model
-                        | token = RemoteData.Success token
-                        , session = Session.updateLogin model.session (LoggedIn token)
+                        | session = newSession
+                        , login = RemoteData.succeed ()
                       }
                     , Cmd.batch
-                        [ Session.navigateTo model (model.transitionTo |> Maybe.withDefault Routes.Lists)
-                        , LocalStorage.store ( LocalStorage.authorizationKey, Just (token |> Enc.string) )
+                        [ Routes.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Lists)
+                        , Auth.updateLocalStorage newSession.authentication
                         ]
+                        |> Cmd.map model.map
                     )
 
                 Err error ->
-                    ( { model | token = RemoteData.Failure error }, Cmd.none )
+                    ( { model | login = RemoteData.Failure error }, Cmd.none )
 
 
-subscriptions : Model -> Sub Msg
+subscriptions : Model mainMsg -> Sub mainMsg
 subscriptions _ =
     Sub.none
 
 
-view : Model -> Html Msg
+view : Model mainMsg -> Html mainMsg
 view model =
     H.section
         [ Attr.class "todoapp" ]
@@ -104,7 +114,7 @@ view model =
         , H.form [ Ev.onSubmit Submit ]
             [ H.input
                 [ Attr.class "new-todo"
-                , Attr.disabled (model.token |> RemoteData.isLoading)
+                , Attr.disabled (RemoteData.isLoading model.login)
                 , Attr.placeholder "username"
                 , Attr.autofocus True
                 , Attr.value model.username
@@ -113,7 +123,7 @@ view model =
                 []
             , H.input
                 [ Attr.class "new-todo"
-                , Attr.disabled (model.token |> RemoteData.isLoading)
+                , Attr.disabled (RemoteData.isLoading model.login)
                 , Attr.placeholder "password"
                 , Attr.value model.password
                 , Attr.type_ "password"
@@ -123,3 +133,4 @@ view model =
             , H.button [ Attr.style "display" "none", Attr.type_ "submit" ] []
             ]
         ]
+        |> H.map model.map

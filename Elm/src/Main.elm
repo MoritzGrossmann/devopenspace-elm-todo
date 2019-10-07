@@ -1,15 +1,16 @@
 module Main exposing (main)
 
+import Auth
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
-import Page
-import Page.List as ListPage
-import Page.Lists as ListsPage
+import LocalStorage
+import Navigation.Routes as Routes exposing (Route)
 import Page.Login as LoginPage
 import Page.LoginPending as LoginPending
-import Routes exposing (Route)
-import Session exposing (Login(..), Session, getNavKey)
+import Page.TaskList as TaskListPage
+import Page.TaskLists as TaskListsPage
+import Session exposing (Session)
 import Url exposing (Url)
 
 
@@ -40,11 +41,11 @@ init flags location key =
                 Nothing ->
                     let
                         ( initModel, initCmd ) =
-                            initPage session Routes.Login
+                            initPage session Routes.Lists
                     in
                     ( initModel
                     , Cmd.batch
-                        [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Login)
+                        [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Lists)
                         , initCmd
                         ]
                     )
@@ -58,24 +59,26 @@ init flags location key =
 
 
 type Model
-    = Login (LoginPage.Page Msg)
-    | List (ListPage.Page Msg)
-    | Lists (ListsPage.Page Msg)
-    | LoginPending (LoginPending.Page Msg)
+    = Login (LoginPage.Model Msg)
+    | LoginPending (LoginPending.Model Msg)
+    | List (TaskListPage.Model Msg)
+    | Lists (TaskListsPage.Model Msg)
 
 
 type Msg
-    = UrlRequested UrlRequest
+    = NoOp
+    | UrlRequested UrlRequest
     | UrlChanged Url
-    | ListMsg (Page.PageMsg ListPage.Msg)
-    | LoginMsg (Page.PageMsg LoginPage.Msg)
-    | ListsMsg (Page.PageMsg ListsPage.Msg)
-    | LoginPendingMsg (Page.PageMsg LoginPending.Msg)
+    | AuthorizationStoreChanged (Session -> Session)
+    | LoginMsg LoginPage.Msg
+    | LoginPendingMsg LoginPending.Msg
+    | ListMsg TaskListPage.Msg
+    | ListsMsg TaskListsPage.Msg
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
 initPage session route =
-    if session.login == NotLoggedIn && route /= Routes.Login then
+    if not (Auth.isAuthenticated session) && route /= Routes.Login then
         let
             ( pageModel, pageCmd ) =
                 LoginPending.init LoginPendingMsg session (Just route)
@@ -94,14 +97,14 @@ initPage session route =
             Routes.List listId filter ->
                 let
                     ( pageModel, pageCmd ) =
-                        ListPage.init ListMsg session filter listId
+                        TaskListPage.init ListMsg session filter listId
                 in
                 ( List pageModel, pageCmd )
 
             Routes.Lists ->
                 let
                     ( pageModel, pageCmd ) =
-                        ListsPage.init ListsMsg session
+                        TaskListsPage.init ListsMsg session
                 in
                 ( Lists pageModel, pageCmd )
 
@@ -109,35 +112,55 @@ initPage session route =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        AuthorizationStoreChanged updSession ->
+            let
+                newModel =
+                    updateSession updSession model
+
+                navCmd =
+                    if withSession Auth.isAuthenticated newModel then
+                        Cmd.none
+
+                    else
+                        navigateTo model Routes.Login
+            in
+            ( newModel, navCmd )
+
         UrlRequested urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    case Routes.locationToRoute (model |> getFlags).baseUrlPath url of
+                    case locationToRoute model url of
                         Nothing ->
-                            ( model, Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) )
+                            ( model, navigateTo model Routes.Lists )
 
                         Just route ->
-                            ( model, Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath route) )
+                            ( model, navigateTo model route )
 
                 Browser.External url ->
                     ( model, Nav.load url )
 
         UrlChanged url ->
-            case (withSession identity model).login of
-                NotLoggedIn ->
-                    initPage (withSession identity model) Routes.Login
+            if not (withSession Auth.isAuthenticated model) then
+                initPage (getSession model) Routes.Login
 
-                LoggedIn _ ->
-                    let
-                        route =
-                            Routes.locationToRoute (getFlags model).baseUrlPath url
-                    in
-                    case route of
-                        Just r ->
-                            initPage (withSession identity model) r
+            else
+                let
+                    route =
+                        locationToRoute model url
+                in
+                case route of
+                    Just r ->
+                        initPage (getSession model) r
 
-                        Nothing ->
-                            initPage (withSession identity model) Routes.Lists
+                    Nothing ->
+                        let
+                            ( page, pageCmd ) =
+                                initPage (getSession model) Routes.Lists
+                        in
+                        ( page, Cmd.batch [ pageCmd, replaceUrl model Routes.Lists ] )
 
         ListMsg pageMsg ->
             updateList pageMsg model
@@ -152,13 +175,13 @@ update msg model =
             updateLoginPending pageMsg model
 
 
-updateLogin : Page.PageMsg LoginPage.Msg -> Model -> ( Model, Cmd Msg )
+updateLogin : LoginPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg pageModel =
     case pageModel of
         Login loginModel ->
             let
                 ( newLoginModel, cmd ) =
-                    Page.update msg loginModel
+                    LoginPage.update msg loginModel
             in
             ( Login newLoginModel, cmd )
 
@@ -166,13 +189,13 @@ updateLogin msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateLoginPending : Page.PageMsg LoginPending.Msg -> Model -> ( Model, Cmd Msg )
+updateLoginPending : LoginPending.Msg -> Model -> ( Model, Cmd Msg )
 updateLoginPending msg pageModel =
     case pageModel of
         LoginPending loginPendingModel ->
             let
                 ( newLoginPendingModel, cmd ) =
-                    Page.update msg loginPendingModel
+                    LoginPending.update msg loginPendingModel
             in
             ( LoginPending newLoginPendingModel, cmd )
 
@@ -180,13 +203,13 @@ updateLoginPending msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateList : Page.PageMsg ListPage.Msg -> Model -> ( Model, Cmd Msg )
+updateList : TaskListPage.Msg -> Model -> ( Model, Cmd Msg )
 updateList msg pageModel =
     case pageModel of
         List listModel ->
             let
                 ( newListModel, cmd ) =
-                    Page.update msg listModel
+                    TaskListPage.update msg listModel
             in
             ( List newListModel, cmd )
 
@@ -194,13 +217,13 @@ updateList msg pageModel =
             ( pageModel, Cmd.none )
 
 
-updateLists : Page.PageMsg ListsPage.Msg -> Model -> ( Model, Cmd Msg )
+updateLists : TaskListsPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLists msg pageModel =
     case pageModel of
         Lists listsModel ->
             let
                 ( newListsModel, cmd ) =
-                    Page.update msg listsModel
+                    TaskListsPage.update msg listsModel
             in
             ( Lists newListsModel, cmd )
 
@@ -214,16 +237,16 @@ view model =
         page =
             case model of
                 List listModel ->
-                    Page.view listModel
+                    TaskListPage.view listModel
 
                 Login loginModel ->
-                    Page.view loginModel
+                    LoginPage.view loginModel
 
                 Lists listsModel ->
-                    Page.view listsModel
+                    TaskListsPage.view listsModel
 
                 LoginPending loginPendingModel ->
-                    Page.view loginPendingModel
+                    LoginPending.view loginPendingModel
     in
     { title = "TODO - Elm"
     , body = [ page ]
@@ -232,41 +255,71 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
+    let
+        pageSubs =
+            case model of
+                List listModel ->
+                    TaskListPage.subscriptions listModel
+
+                Login loginModel ->
+                    LoginPage.subscriptions loginModel
+
+                Lists listsModel ->
+                    TaskListsPage.subscriptions listsModel
+
+                LoginPending loginPendingModel ->
+                    LoginPending.subscriptions loginPendingModel
+    in
+    Sub.batch [ pageSubs, Auth.watchLocalStorage NoOp AuthorizationStoreChanged ]
+
+
+updateSession : (Session -> Session) -> Model -> Model
+updateSession upd model =
     case model of
-        List listModel ->
-            Page.subscriptions listModel
+        List page ->
+            List { page | session = upd page.session }
 
-        Login loginModel ->
-            Page.subscriptions loginModel
+        Login page ->
+            Login { page | session = upd page.session }
 
-        Lists listsModel ->
-            Page.subscriptions listsModel
+        Lists page ->
+            Lists { page | session = upd page.session }
 
-        LoginPending loginPendingModel ->
-            Page.subscriptions loginPendingModel
-
-
-getFlags : Model -> Flags
-getFlags =
-    withSession Session.getFlags
-
-
-getNavKey : Model -> Nav.Key
-getNavKey =
-    withSession Session.getNavKey
+        LoginPending page ->
+            LoginPending { page | session = upd page.session }
 
 
 withSession : (Session -> a) -> Model -> a
 withSession with model =
     case model of
         List page ->
-            with (Page.getSession page)
+            with page.session
 
         Login page ->
-            with (Page.getSession page)
+            with page.session
 
         Lists page ->
-            with (Page.getSession page)
+            with page.session
 
         LoginPending page ->
-            with (Page.getSession page)
+            with page.session
+
+
+getSession : Model -> Session
+getSession =
+    withSession identity
+
+
+locationToRoute : Model -> Url -> Maybe Route
+locationToRoute model url =
+    withSession (\session -> Routes.locationToRoute session.flags.baseUrlPath url) model
+
+
+navigateTo : Model -> Route -> Cmd msg
+navigateTo model route =
+    withSession (\session -> Routes.navigateTo session route) model
+
+
+replaceUrl : Model -> Route -> Cmd msg
+replaceUrl model route =
+    withSession (\session -> Routes.replaceUrl session route) model
