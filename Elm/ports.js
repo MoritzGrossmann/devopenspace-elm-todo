@@ -10,8 +10,8 @@ window.initPorts = function (app) {
   });
 
   window.addEventListener("storage", function (e) {
-    if (app.ports.localStorageChanged) {
-      app.ports.localStorageChanged.send([e.key, e.newValue]);
+    if (app.ports.receive) {
+      app.ports.receive.send([e.key, e.newValue]);
     }
   });
 

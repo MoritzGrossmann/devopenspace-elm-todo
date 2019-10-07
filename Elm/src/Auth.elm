@@ -20,7 +20,7 @@ import Flags exposing (Flags)
 import Http
 import Json.Decode as Json
 import Json.Encode as Enc
-import LocalStorage
+import LocalStorage as LS
 import Navigation.AppUrl as AppUrl
 import String.Interpolate as String
 import Url.Builder as Url
@@ -83,21 +83,22 @@ clearAuthentication =
 watchLocalStorage : msg -> ((ModelWithAuth m -> ModelWithAuth m) -> msg) -> Sub msg
 watchLocalStorage noOpMsg toUpdMsg =
     let
+        decide ( key, newValue ) =
+            if key == localStorageAuthorizationKey then
+                maybeUpdate newValue
+
+            else
+                noOpMsg
+
         maybeUpdate =
             Maybe.map (AuthToken >> setAuthenticated >> toUpdMsg) >> Maybe.withDefault (toUpdMsg clearAuthentication)
-
-        onChange =
-            LocalStorage.authorizationValueChanged noOpMsg maybeUpdate
-
-        onReceive =
-            LocalStorage.authorizationValueReceived noOpMsg maybeUpdate
     in
-    Sub.batch [ onChange, onReceive ]
+    LS.receive decide
 
 
 requestLocalStorageAuth : Cmd msg
 requestLocalStorageAuth =
-    LocalStorage.request LocalStorage.authorizationKey
+    LS.request localStorageAuthorizationKey
 
 
 updateLocalStorage : Authentication -> Cmd msg
@@ -115,12 +116,12 @@ updateLocalStorage auth =
 
 setStoreToken : AuthToken -> Cmd msg
 setStoreToken (AuthToken token) =
-    LocalStorage.store ( LocalStorage.authorizationKey, Just (Enc.string token) )
+    LS.store ( localStorageAuthorizationKey, Just (Enc.string token) )
 
 
 resetStoreToken : Cmd msg
 resetStoreToken =
-    LocalStorage.store ( LocalStorage.authorizationKey, Nothing )
+    LS.store ( localStorageAuthorizationKey, Nothing )
 
 
 {-| Note you should use 'updateLocalStorage' after receiving an anwer to this to make sure the state is stored correctly
@@ -186,3 +187,8 @@ basicAuthHeader username password =
             String.interpolate "{0}:{1}" [ username, password ]
     in
     Http.header "Authorization" (String.interpolate "Basic {0}" [ Base64.encode up ])
+
+
+localStorageAuthorizationKey : LS.StorageKey
+localStorageAuthorizationKey =
+    "Authorization"
