@@ -132,7 +132,7 @@ update msg model =
         UrlRequested urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    case withSession (\session -> Routes.locationToRoute session.flags.baseUrlPath url) model of
+                    case locationToRoute model url of
                         Nothing ->
                             ( model, navigateTo model Routes.Lists )
 
@@ -144,21 +144,21 @@ update msg model =
 
         UrlChanged url ->
             if not (withSession Auth.isAuthenticated model) then
-                initPage (withSession identity model) Routes.Login
+                initPage (getSession model) Routes.Login
 
             else
                 let
                     route =
-                        withSession (\session -> Routes.locationToRoute session.flags.baseUrlPath url) model
+                        locationToRoute model url
                 in
                 case route of
                     Just r ->
-                        initPage (withSession identity model) r
+                        initPage (getSession model) r
 
                     Nothing ->
                         let
                             ( page, pageCmd ) =
-                                initPage (withSession identity model) Routes.Lists
+                                initPage (getSession model) Routes.Lists
                         in
                         ( page, Cmd.batch [ pageCmd, replaceUrl model Routes.Lists ] )
 
@@ -303,6 +303,16 @@ withSession with model =
 
         LoginPending page ->
             with page.session
+
+
+getSession : Model -> Session
+getSession =
+    withSession identity
+
+
+locationToRoute : Model -> Url -> Maybe Route
+locationToRoute model url =
+    withSession (\session -> Routes.locationToRoute session.flags.baseUrlPath url) model
 
 
 navigateTo : Model -> Route -> Cmd msg
