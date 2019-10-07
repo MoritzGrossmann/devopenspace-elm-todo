@@ -44,3 +44,7 @@ h2, h3, h4, h5, h6 {
 .navbar span {
     padding: 18px;
 }
+
+.todoapp h1 {
+    top: -170px;
+}
