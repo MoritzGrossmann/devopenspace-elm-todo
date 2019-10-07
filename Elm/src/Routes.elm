@@ -1,6 +1,7 @@
 module Routes exposing (Route(..), locationToRoute, routeToUrlString)
 
-import Flags exposing (BaseUrlPath, buildUrl)
+import AppUrl exposing (BaseUrlPath, buildUrl)
+import Flags
 import Models.TaskList as TaskList
 import Models.Tasks exposing (Filter(..))
 import Url exposing (Url)
@@ -28,14 +29,14 @@ routeToUrlString baseUrl targetRoute =
             let
                 fragment =
                     case filter of
-                        All ->
-                            Just "all"
-
                         Active ->
                             Just "active"
 
                         Completed ->
                             Just "completed"
+
+                        All ->
+                            Nothing
             in
             buildUrl baseUrl [ "list", TaskList.idToString id ] [] fragment
 
@@ -53,21 +54,20 @@ route baseUrl =
                 |> List.map UrlP.s
                 |> List.foldr (</>) UrlP.top
 
-        filterParser frag =
-            frag
-                |> Maybe.map
-                    (\f ->
-                        case f of
-                            "active" ->
-                                Active
+        filterParser =
+            Maybe.map
+                (\frag ->
+                    case frag of
+                        "active" ->
+                            Active
 
-                            "completed" ->
-                                Completed
+                        "completed" ->
+                            Completed
 
-                            _ ->
-                                All
-                    )
-                |> Maybe.withDefault All
+                        _ ->
+                            All
+                )
+                >> Maybe.withDefault All
     in
     UrlP.oneOf
         [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.map TaskList.idFromInt UrlP.int </> UrlP.fragment filterParser)

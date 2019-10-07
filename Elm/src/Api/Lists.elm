@@ -1,5 +1,6 @@
 module Api.Lists exposing (add, all, byId, delete)
 
+import AppUrl
 import Auth
 import Http
 import Json.Decode as Json
@@ -13,7 +14,7 @@ all session toMsg =
     Http.request
         { method = "GET"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "list" ] [] Nothing
+        , url = AppUrl.apiListGetAllUrl session.flags
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg (Json.list TaskList.decoder)
         , timeout = Nothing
@@ -26,7 +27,7 @@ byId session toMsg listId =
     Http.request
         { method = "GET"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "list", TaskList.idToString listId ] [] Nothing
+        , url = AppUrl.apiListGetByIdUrl session.flags listId
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg TaskList.decoder
         , timeout = Nothing
@@ -39,7 +40,7 @@ delete session toMsg listId =
     Http.request
         { method = "DELETE"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "list", TaskList.idToString listId ] [] Nothing
+        , url = AppUrl.apiListDeleteByIdUrl session.flags listId
         , body = Http.emptyBody
         , expect = Http.expectWhatever toMsg
         , timeout = Nothing
@@ -52,7 +53,7 @@ add session toMsg name =
     Http.request
         { method = "POST"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "list" ] [] Nothing
+        , url = AppUrl.apiListPostNewUrl session.flags
         , body = Http.jsonBody (name |> Enc.string)
         , expect = Http.expectJson toMsg TaskList.decoder
         , timeout = Nothing

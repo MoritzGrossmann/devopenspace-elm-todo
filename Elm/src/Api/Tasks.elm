@@ -1,5 +1,6 @@
 module Api.Tasks exposing (delete, get, getAll, new, update)
 
+import AppUrl
 import Auth
 import Http
 import Json.Decode as Decode
@@ -15,7 +16,7 @@ get session toMsg taskId =
     Http.request
         { method = "GET"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "todos", Task.idToString taskId ] [] Nothing
+        , url = AppUrl.apiTaskGetByIdUrl session.flags taskId
         , expect = Http.expectJson toMsg Task.decoder
         , body = Http.emptyBody
         , timeout = Nothing
@@ -28,7 +29,7 @@ getAll session toMsg listId =
     Http.request
         { method = "GET"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "list", TaskList.idToString listId, "todos" ] [] Nothing
+        , url = AppUrl.apiTaskGetAllUrl session.flags listId
         , expect = Http.expectJson toMsg (Decode.list Task.decoder)
         , body = Http.emptyBody
         , timeout = Nothing
@@ -41,7 +42,7 @@ update session toMsg listId task =
     Http.request
         { method = "put"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "todos" ] [] Nothing
+        , url = AppUrl.apiTaskUpdateUrl session.flags
         , body = Http.jsonBody (Task.encode listId task)
         , expect = Http.expectJson toMsg Task.decoder
         , timeout = Nothing
@@ -50,11 +51,11 @@ update session toMsg listId task =
 
 
 delete : Session -> (Result Http.Error (List Task) -> msg) -> Task.Id -> Cmd msg
-delete session toMsg task =
+delete session toMsg taskId =
     Http.request
         { method = "delete"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "todos", Task.idToString task ] [] Nothing
+        , url = AppUrl.apiTaskDeleteUrl session.flags taskId
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg (Decode.list Task.decoder)
         , timeout = Nothing
@@ -67,7 +68,7 @@ new session toMsg listId text =
     Http.request
         { method = "POST"
         , headers = Auth.bearerAuthHeader session
-        , url = Session.makeApiUrl session [ "list", TaskList.idToString listId, "todos" ] [] Nothing
+        , url = AppUrl.apiTaskPostNewUrl session.flags listId
         , body = Http.jsonBody (Enc.string text)
         , expect = Http.expectJson toMsg Task.decoder
         , timeout = Nothing

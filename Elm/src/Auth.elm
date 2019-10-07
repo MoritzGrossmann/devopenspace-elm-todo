@@ -15,8 +15,9 @@ module Auth exposing
     , watchLocalStorage
     )
 
+import AppUrl
 import Base64
-import Flags exposing (Flags, makeApiUrl)
+import Flags exposing (Flags)
 import Http
 import Json.Decode as Json
 import Json.Encode as Enc
@@ -136,7 +137,7 @@ httpLogin flags toMsg username password =
         , headers =
             [ basicAuthHeader username password
             ]
-        , url = makeApiUrl flags [ "user", "login" ] [] Nothing
+        , url = AppUrl.apiUserLoginUrl flags
         , body = Http.emptyBody
         , expect = Http.expectJson mapJwt Json.string
         , timeout = Nothing
@@ -153,7 +154,7 @@ httpRegister flags toMsg username password =
     Http.request
         { method = "POST"
         , headers = []
-        , url = makeApiUrl flags [ "user", "register" ] [] Nothing
+        , url = AppUrl.apiUserRegisterUrl flags
         , body =
             Http.jsonBody
                 (Enc.object

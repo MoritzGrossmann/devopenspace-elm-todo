@@ -58,7 +58,7 @@ update msg model =
             case httpError of
                 Http.BadStatus 401 ->
                     ( { model | lists = RemoteData.Failure httpError }
-                    , Session.navigateTo model Routes.Login
+                    , Session.navigateTo model.session Routes.Login
                         |> Cmd.map model.map
                     )
 

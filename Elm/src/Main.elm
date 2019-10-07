@@ -10,7 +10,7 @@ import Page.LoginPending as LoginPending
 import Page.TaskList as TaskListPage
 import Page.TaskLists as TaskListsPage
 import Routes exposing (Route)
-import Session exposing (Session, getNavKey)
+import Session exposing (Session)
 import Url exposing (Url)
 
 
@@ -125,19 +125,19 @@ update msg model =
                         Cmd.none
 
                     else
-                        Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Login)
+                        navigateTo model Routes.Login
             in
             ( newModel, navCmd )
 
         UrlRequested urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    case Routes.locationToRoute (model |> getFlags).baseUrlPath url of
+                    case withSession (\session -> Routes.locationToRoute session.flags.baseUrlPath url) model of
                         Nothing ->
-                            ( model, Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) )
+                            ( model, navigateTo model Routes.Lists )
 
                         Just route ->
-                            ( model, Nav.pushUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath route) )
+                            ( model, navigateTo model route )
 
                 Browser.External url ->
                     ( model, Nav.load url )
@@ -149,7 +149,7 @@ update msg model =
             else
                 let
                     route =
-                        Routes.locationToRoute (getFlags model).baseUrlPath url
+                        withSession (\session -> Routes.locationToRoute session.flags.baseUrlPath url) model
                 in
                 case route of
                     Just r ->
@@ -160,7 +160,7 @@ update msg model =
                             ( page, pageCmd ) =
                                 initPage (withSession identity model) Routes.Lists
                         in
-                        ( page, Cmd.batch [ pageCmd, Nav.replaceUrl (getNavKey model) (Routes.routeToUrlString (getFlags model).baseUrlPath Routes.Lists) ] )
+                        ( page, Cmd.batch [ pageCmd, replaceUrl model Routes.Lists ] )
 
         ListMsg pageMsg ->
             updateList pageMsg model
@@ -273,16 +273,6 @@ subscriptions model =
     Sub.batch [ pageSubs, Auth.watchLocalStorage NoOp AuthorizationStoreChanged ]
 
 
-getFlags : Model -> Flags
-getFlags =
-    withSession Session.getFlags
-
-
-getNavKey : Model -> Nav.Key
-getNavKey =
-    withSession Session.getNavKey
-
-
 updateSession : (Session -> Session) -> Model -> Model
 updateSession upd model =
     case model of
@@ -313,3 +303,13 @@ withSession with model =
 
         LoginPending page ->
             with page.session
+
+
+navigateTo : Model -> Route -> Cmd msg
+navigateTo model route =
+    withSession (\session -> Session.navigateTo session route) model
+
+
+replaceUrl : Model -> Route -> Cmd msg
+replaceUrl model route =
+    withSession (\session -> Session.replaceUrl session route) model

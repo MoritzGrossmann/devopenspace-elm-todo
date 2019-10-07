@@ -91,7 +91,7 @@ update msg model =
                         , login = RemoteData.succeed ()
                       }
                     , Cmd.batch
-                        [ Session.navigateTo model (model.transitionTo |> Maybe.withDefault Routes.Lists)
+                        [ Session.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Lists)
                         , Auth.updateLocalStorage newSession.authentication
                         ]
                         |> Cmd.map model.map

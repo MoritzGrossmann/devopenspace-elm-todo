@@ -249,7 +249,7 @@ update msg model =
         ListMetaDataReceived (Err httpError) ->
             case httpError of
                 Http.BadStatus 401 ->
-                    ( model, Session.navigateTo model Routes.Login )
+                    ( model, Session.navigateTo model.session Routes.Login )
 
                 _ ->
                     ( { model | taskList = RemoteData.Failure httpError }, Cmd.none )

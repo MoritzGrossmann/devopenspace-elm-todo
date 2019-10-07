@@ -1,17 +1,11 @@
 module Session exposing
     ( Session
-    , getFlags
-    , getNavKey
-    , getUrl
     , init
-    , makeApiUrl
-    , makeSessionUrl
     , navigateTo
     , replaceUrl
-    , routeUrl
-    , sessionRouteUrl
     )
 
+import AppUrl
 import Auth
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
@@ -35,60 +29,30 @@ init flags key =
     )
 
 
-makeSessionUrl : Session -> List String -> List Url.QueryParameter -> Maybe String -> String
-makeSessionUrl session =
-    Flags.makeUrl session.flags
-
-
-makeApiUrl : Session -> List String -> List Url.QueryParameter -> Maybe String -> String
-makeApiUrl session =
-    Flags.makeApiUrl session.flags
-
-
-getUrl : { m | session : Session } -> List String -> List Url.QueryParameter -> Maybe String -> String
-getUrl model =
-    makeSessionUrl model.session
-
-
-getFlags : Session -> Flags
-getFlags session =
-    session.flags
-
-
-getNavKey : Session -> Nav.Key
-getNavKey session =
-    session.navKey
-
-
-navigateTo : { m | session : Session } -> Routes.Route -> Cmd msg
-navigateTo model route =
+navigateTo : Session -> Routes.Route -> Cmd msg
+navigateTo session route =
     let
         url =
-            routeUrl model route
+            getRouteUrl session route
 
         key =
-            model.session.navKey
+            session.navKey
     in
     Nav.pushUrl key url
 
 
-replaceUrl : { m | session : Session } -> Routes.Route -> Cmd msg
-replaceUrl model route =
+replaceUrl : Session -> Routes.Route -> Cmd msg
+replaceUrl session route =
     let
         url =
-            routeUrl model route
+            getRouteUrl session route
 
         key =
-            model.session.navKey
+            session.navKey
     in
     Nav.replaceUrl key url
 
 
-routeUrl : { m | session : Session } -> Routes.Route -> String
-routeUrl model =
-    sessionRouteUrl model.session
-
-
-sessionRouteUrl : Session -> Routes.Route -> String
-sessionRouteUrl session route =
+getRouteUrl : Session -> Routes.Route -> String
+getRouteUrl session route =
     Routes.routeToUrlString session.flags.baseUrlPath route

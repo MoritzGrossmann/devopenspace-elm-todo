@@ -43,10 +43,10 @@ update msg model =
 
                 navCmd =
                     if Auth.isAuthenticated newSession then
-                        Cmd.map model.map (Session.navigateTo model (model.route |> Maybe.withDefault Routes.Lists))
+                        Cmd.map model.map (Session.navigateTo model.session (model.route |> Maybe.withDefault Routes.Lists))
 
                     else
-                        Cmd.map model.map (Session.navigateTo model (model.route |> Maybe.withDefault Routes.Login))
+                        Cmd.map model.map (Session.navigateTo model.session (model.route |> Maybe.withDefault Routes.Login))
             in
             ( { model | session = newSession }, navCmd )
 
