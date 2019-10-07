@@ -4,7 +4,7 @@ import Auth
 import Debug
 import Html as H exposing (Html)
 import LocalStorage
-import Routes exposing (Route)
+import Navigation.Routes as Routes exposing (Route)
 import Session exposing (Session)
 
 
@@ -43,10 +43,10 @@ update msg model =
 
                 navCmd =
                     if Auth.isAuthenticated newSession then
-                        Cmd.map model.map (Session.navigateTo model.session (model.route |> Maybe.withDefault Routes.Lists))
+                        Cmd.map model.map (Routes.navigateTo model.session (model.route |> Maybe.withDefault Routes.Lists))
 
                     else
-                        Cmd.map model.map (Session.navigateTo model.session (model.route |> Maybe.withDefault Routes.Login))
+                        Cmd.map model.map (Routes.navigateTo model.session (model.route |> Maybe.withDefault Routes.Login))
             in
             ( { model | session = newSession }, navCmd )
 

@@ -9,8 +9,8 @@ import Http
 import Models.TaskList as TaskList exposing (TaskList)
 import Models.TaskLists as TaskLists exposing (TaskLists)
 import Models.Tasks exposing (Filter(..))
+import Navigation.Routes as Routes
 import RemoteData exposing (WebData)
-import Routes
 import Session exposing (Session)
 
 
@@ -58,7 +58,7 @@ update msg model =
             case httpError of
                 Http.BadStatus 401 ->
                     ( { model | lists = RemoteData.Failure httpError }
-                    , Session.navigateTo model.session Routes.Login
+                    , Routes.navigateTo model.session Routes.Login
                         |> Cmd.map model.map
                     )
 

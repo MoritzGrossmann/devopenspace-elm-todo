@@ -15,13 +15,13 @@ module Auth exposing
     , watchLocalStorage
     )
 
-import AppUrl
 import Base64
 import Flags exposing (Flags)
 import Http
 import Json.Decode as Json
 import Json.Encode as Enc
 import LocalStorage
+import Navigation.AppUrl as AppUrl
 import String.Interpolate as String
 import Url.Builder as Url
 

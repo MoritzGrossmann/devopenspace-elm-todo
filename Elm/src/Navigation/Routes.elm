@@ -1,9 +1,11 @@
-module Routes exposing (Route(..), locationToRoute, routeToUrlString)
+module Navigation.Routes exposing (Route(..), locationToRoute, navigateTo, replaceUrl, routeToUrlString)
 
-import AppUrl exposing (BaseUrlPath, buildUrl)
+import Browser.Navigation as Nav
 import Flags
 import Models.TaskList as TaskList
 import Models.Tasks exposing (Filter(..))
+import Navigation.AppUrl exposing (BaseUrlPath, buildUrl)
+import Session exposing (Session)
 import Url exposing (Url)
 import Url.Parser as UrlP exposing ((</>), Parser)
 
@@ -14,9 +16,38 @@ type Route
     | Lists
 
 
+navigateTo : Session -> Route -> Cmd msg
+navigateTo session route =
+    let
+        url =
+            getRouteUrl session route
+
+        key =
+            session.navKey
+    in
+    Nav.pushUrl key url
+
+
+replaceUrl : Session -> Route -> Cmd msg
+replaceUrl session route =
+    let
+        url =
+            getRouteUrl session route
+
+        key =
+            session.navKey
+    in
+    Nav.replaceUrl key url
+
+
+getRouteUrl : Session -> Route -> String
+getRouteUrl session route =
+    routeToUrlString session.flags.baseUrlPath route
+
+
 locationToRoute : BaseUrlPath -> Url -> Maybe Route
 locationToRoute baseUrl url =
-    UrlP.parse (route baseUrl) url
+    UrlP.parse (routeParser baseUrl) url
 
 
 routeToUrlString : BaseUrlPath -> Route -> String
@@ -44,8 +75,8 @@ routeToUrlString baseUrl targetRoute =
             buildUrl baseUrl [] [] Nothing
 
 
-route : BaseUrlPath -> Parser (Route -> a) a
-route baseUrl =
+routeParser : BaseUrlPath -> Parser (Route -> a) a
+routeParser baseUrl =
     let
         basePart =
             baseUrl

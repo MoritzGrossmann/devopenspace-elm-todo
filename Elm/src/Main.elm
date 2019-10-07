@@ -5,11 +5,11 @@ import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import LocalStorage
+import Navigation.Routes as Routes exposing (Route)
 import Page.Login as LoginPage
 import Page.LoginPending as LoginPending
 import Page.TaskList as TaskListPage
 import Page.TaskLists as TaskListsPage
-import Routes exposing (Route)
 import Session exposing (Session)
 import Url exposing (Url)
 
@@ -307,9 +307,9 @@ withSession with model =
 
 navigateTo : Model -> Route -> Cmd msg
 navigateTo model route =
-    withSession (\session -> Session.navigateTo session route) model
+    withSession (\session -> Routes.navigateTo session route) model
 
 
 replaceUrl : Model -> Route -> Cmd msg
 replaceUrl model route =
-    withSession (\session -> Session.replaceUrl session route) model
+    withSession (\session -> Routes.replaceUrl session route) model

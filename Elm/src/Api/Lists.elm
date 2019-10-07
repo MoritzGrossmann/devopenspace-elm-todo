@@ -1,11 +1,11 @@
 module Api.Lists exposing (add, all, byId, delete)
 
-import AppUrl
 import Auth
 import Http
 import Json.Decode as Json
 import Json.Encode as Enc
 import Models.TaskList as TaskList exposing (TaskList)
+import Navigation.AppUrl as AppUrl
 import Session exposing (Session)
 
 

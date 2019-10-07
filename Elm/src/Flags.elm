@@ -1,6 +1,6 @@
 module Flags exposing (Flags)
 
-import AppUrl exposing (BaseUrlPath)
+import Navigation.AppUrl exposing (BaseUrlPath)
 
 
 type alias Flags =

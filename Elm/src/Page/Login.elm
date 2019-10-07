@@ -17,8 +17,8 @@ import Html.Events as Ev
 import Http
 import Json.Encode as Enc
 import LocalStorage
+import Navigation.Routes as Routes exposing (Route)
 import RemoteData exposing (WebData)
-import Routes exposing (Route)
 import Session exposing (Session)
 
 
@@ -91,7 +91,7 @@ update msg model =
                         , login = RemoteData.succeed ()
                       }
                     , Cmd.batch
-                        [ Session.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Lists)
+                        [ Routes.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Lists)
                         , Auth.updateLocalStorage newSession.authentication
                         ]
                         |> Cmd.map model.map

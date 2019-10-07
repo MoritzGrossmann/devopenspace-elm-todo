@@ -1,6 +1,5 @@
 module Api.Tasks exposing (delete, get, getAll, new, update)
 
-import AppUrl
 import Auth
 import Http
 import Json.Decode as Decode
@@ -8,6 +7,7 @@ import Json.Encode as Enc
 import Models.Task as Task exposing (Task)
 import Models.TaskList as TaskList
 import Models.Tasks as Tasks
+import Navigation.AppUrl as AppUrl
 import Session exposing (Session)
 
 

@@ -11,8 +11,8 @@ import Json.Decode as Json
 import Models.Task as Task exposing (Task)
 import Models.TaskList as TaskList exposing (TaskList)
 import Models.Tasks as Tasks exposing (Filter(..), Tasks)
+import Navigation.Routes as Routes
 import RemoteData exposing (WebData)
-import Routes
 import Session exposing (Session)
 import Task
 
@@ -249,7 +249,7 @@ update msg model =
         ListMetaDataReceived (Err httpError) ->
             case httpError of
                 Http.BadStatus 401 ->
-                    ( model, Session.navigateTo model.session Routes.Login )
+                    ( model, Routes.navigateTo model.session Routes.Login )
 
                 _ ->
                     ( { model | taskList = RemoteData.Failure httpError }, Cmd.none )

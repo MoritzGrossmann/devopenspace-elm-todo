@@ -1,4 +1,4 @@
-module AppUrl exposing (..)
+module Navigation.AppUrl exposing (..)
 
 import Models.Task as Task
 import Models.TaskList as TaskList
