@@ -1,4 +1,4 @@
-module Api.Tasks exposing (delete, get, getAll, new, update)
+module Api.Task exposing (delete, get, getAll, new, update)
 
 import Auth
 import Http

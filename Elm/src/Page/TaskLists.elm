@@ -1,6 +1,6 @@
 module Page.TaskLists exposing (Model, Msg, init, subscriptions, update, view)
 
-import Api.Lists
+import Api.TaskList as Api
 import Dict exposing (Dict)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
@@ -29,7 +29,7 @@ init wrap session =
       , lists = RemoteData.Loading
       , neueListe = ""
       }
-    , Api.Lists.all session ListResult
+    , Api.all session ListResult
         |> Cmd.map wrap
     )
 
@@ -70,7 +70,7 @@ update msg model =
 
         SubmitNeueListe ->
             ( model
-            , Api.Lists.add model.session NeueListeResult model.neueListe
+            , Api.add model.session NeueListeResult model.neueListe
                 |> Cmd.map model.map
             )
 
@@ -89,7 +89,7 @@ update msg model =
 
         DeleteList id ->
             ( model
-            , Api.Lists.delete model.session (DeleteListResult id) id
+            , Api.delete model.session (DeleteListResult id) id
                 |> Cmd.map model.map
             )
 

@@ -1,4 +1,4 @@
-module Api.Lists exposing (add, all, byId, delete)
+module Api.TaskList exposing (add, all, byId, delete)
 
 import Auth
 import Http

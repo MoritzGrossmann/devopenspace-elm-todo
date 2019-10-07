@@ -1,7 +1,7 @@
 module Page.TaskList exposing (Model, Msg, init, subscriptions, update, view)
 
-import Api.Lists
-import Api.Tasks as Api
+import Api.Task as Api
+import Api.TaskList as ApiList
 import Browser.Dom as Dom
 import Html as H exposing (Html)
 import Html.Attributes as Attr
@@ -64,7 +64,7 @@ init wrap session filter listId =
       }
     , Cmd.batch
         [ Api.getAll session TasksReceived listId
-        , Api.Lists.byId session ListMetaDataReceived listId
+        , ApiList.byId session ListMetaDataReceived listId
         ]
         |> Cmd.map wrap
     )
