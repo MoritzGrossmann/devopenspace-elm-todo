@@ -1,6 +1,7 @@
 module Page.TaskLists exposing (Model, Msg, init, subscriptions, update, view)
 
 import Api.TaskList as Api
+import Components.Navbar as Navbar
 import Dict exposing (Dict)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
@@ -108,27 +109,30 @@ update msg model =
 
 view : Model mainMsg -> Html mainMsg
 view model =
-    H.section
-        [ Attr.class "todoapp" ]
-        [ H.h1 [] [ H.text "Listen" ]
-        , H.form [ Ev.onSubmit SubmitNeueListe ]
-            [ H.input
-                [ Attr.class "new-todo"
-                , Attr.placeholder "create a List"
-                , Attr.autofocus True
-                , Attr.value model.neueListe
-                , Ev.onInput UpdateNeueListe
+    H.div []
+        [ Navbar.view model.session
+        , H.section
+            [ Attr.class "todoapp" ]
+            [ H.h1 [] [ H.text "Listen" ]
+            , H.form [ Ev.onSubmit SubmitNeueListe ]
+                [ H.input
+                    [ Attr.class "new-todo"
+                    , Attr.placeholder "create a List"
+                    , Attr.autofocus True
+                    , Attr.value model.neueListe
+                    , Ev.onInput UpdateNeueListe
+                    ]
+                    []
+                , H.button [ Attr.style "display" "none", Attr.type_ "submit" ] []
                 ]
-                []
-            , H.button [ Attr.style "display" "none", Attr.type_ "submit" ] []
+            , H.ul
+                [ Attr.class "todo-list" ]
+                (model.lists
+                    |> RemoteData.map
+                        (TaskLists.allTaskLists >> List.map (viewListItem model.session))
+                    |> RemoteData.withDefault []
+                )
             ]
-        , H.ul
-            [ Attr.class "todo-list" ]
-            (model.lists
-                |> RemoteData.map
-                    (TaskLists.allTaskLists >> List.map (viewListItem model.session))
-                |> RemoteData.withDefault []
-            )
         ]
         |> H.map model.map
 
