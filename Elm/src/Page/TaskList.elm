@@ -48,7 +48,7 @@ type Msg
     | ToggleAll Bool
     | TasksReceived (Result Http.Error (List Task))
     | TaskReceived (Result Http.Error Task)
-    | ListMetaDataReceived (Result Http.Error TaskList)
+    | ListReceived (Result Http.Error TaskList)
 
 
 init : (Msg -> mainMsg) -> Session -> Filter -> TaskList.Id -> ( Model mainMsg, Cmd mainMsg )
@@ -64,7 +64,7 @@ init wrap session filter listId =
       }
     , Cmd.batch
         [ Api.getAll session TasksReceived listId
-        , ApiList.byId session ListMetaDataReceived listId
+        , ApiList.byId session ListReceived listId
         ]
         |> Cmd.map wrap
     )
@@ -243,10 +243,10 @@ update msg model =
             -- for this Demo we ignore communication errors - sorry
             ( model, Cmd.none )
 
-        ListMetaDataReceived (Ok metaData) ->
-            ( { model | taskList = RemoteData.Success metaData }, Cmd.none )
+        ListReceived (Ok liste) ->
+            ( { model | taskList = RemoteData.Success liste }, Cmd.none )
 
-        ListMetaDataReceived (Err httpError) ->
+        ListReceived (Err httpError) ->
             case httpError of
                 Http.BadStatus 401 ->
                     ( model, Routes.navigateTo model.session Routes.Login )
