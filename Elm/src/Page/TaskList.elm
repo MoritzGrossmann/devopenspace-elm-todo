@@ -279,7 +279,18 @@ viewHeader : Model mainMsg -> Html Msg
 viewHeader model =
     H.header
         [ Attr.class "header" ]
-        [ H.h1 [] [ H.text (model.taskList |> RemoteData.map .name |> RemoteData.withDefault "") ]
+        [ H.h1 [] 
+            [ H.text 
+                (model.taskList 
+                    |> RemoteData.map 
+                        (\rd -> 
+                            if (rd.name |> String.length) > 9 then
+                                (rd.name |> String.left 8) ++ "..."
+                            else
+                                rd.name
+                        )
+                    |> RemoteData.withDefault "") 
+            ]
         , H.input
             [ Attr.class "new-todo"
             , Attr.placeholder "what needs to be done?"

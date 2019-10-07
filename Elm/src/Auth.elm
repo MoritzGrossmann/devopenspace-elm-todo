@@ -1,9 +1,9 @@
 module Auth exposing
-    ( AuthToken(..), Authentication(..), ModelWithAuth
+    ( AuthToken, Authentication(..), ModelWithAuth
     , init, isAuthenticated, isNotQueried, clearAuthentication
     , requestLocalStorageAuth, watchLocalStorage, updateLocalStorage
     , httpLogin, httpRegister, basicAuthHeader, bearerAuthHeader
-    , JwtObject, jwtDecoder
+    , getUserName
     )
 
 {-| dieses Modul fast Funktionalitäten im Zusammenhang mit der
@@ -339,17 +339,25 @@ basicAuthHeader username password =
     Http.header "Authorization" (String.interpolate "Basic {0}" [ Base64.encode up ])
 
 
-jwtDecoder : Json.Decoder JwtObject
+jwtDecoder : Json.Decoder Jwt
 jwtDecoder =
-    Json.map JwtObject
-        (Json.field "dat" (Json.map JwtDatObject (Json.field "auName" Json.string)))
+    Json.map Jwt
+        (Json.field "dat" (Json.map JwtDatPart (Json.field "auName" Json.string)))
 
-type alias JwtObject =
-    { dat : 
-        JwtDatObject
+type alias Jwt =
+    { dat : JwtDatPart
     }
 
-type alias JwtDatObject =
-    {
-        auName : String 
+type alias JwtDatPart =
+    { auName : String 
     }
+
+getUserName : { a | authentication : Authentication } -> Maybe String
+getUserName session =
+    case session.authentication of
+        Authenticated (AuthToken token) ->
+            (Jwt.decodeToken jwtDecoder token) 
+                |> Result.map (\jwt -> jwt.dat.auName)
+                |> Result.toMaybe
+        _ ->
+            Nothing
