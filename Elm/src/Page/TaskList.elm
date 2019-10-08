@@ -3,7 +3,6 @@ module Page.TaskList exposing (Model, Msg, init, subscriptions, update, view)
 import Api.Task as Api
 import Api.TaskList as ApiList
 import Browser.Dom as Dom
-import Components.Navbar as Navbar
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
@@ -265,8 +264,7 @@ view model =
 viewTaskApp : Model mainMsg -> Html Msg
 viewTaskApp model =
     H.div []
-        [ Navbar.view model.session
-        , H.section
+        [ H.section
             [ Attr.class "todoapp" ]
             [ viewHeader model
             , viewMain model
@@ -279,17 +277,19 @@ viewHeader : Model mainMsg -> Html Msg
 viewHeader model =
     H.header
         [ Attr.class "header" ]
-        [ H.h1 [] 
-            [ H.text 
-                (model.taskList 
-                    |> RemoteData.map 
-                        (\rd -> 
+        [ H.h1 []
+            [ H.text
+                (model.taskList
+                    |> RemoteData.map
+                        (\rd ->
                             if (rd.name |> String.length) > 9 then
                                 (rd.name |> String.left 8) ++ "..."
+
                             else
                                 rd.name
                         )
-                    |> RemoteData.withDefault "") 
+                    |> RemoteData.withDefault ""
+                )
             ]
         , H.input
             [ Attr.class "new-todo"

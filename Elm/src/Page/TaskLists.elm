@@ -1,7 +1,6 @@
 module Page.TaskLists exposing (Model, Msg, init, subscriptions, update, view)
 
 import Api.TaskList as Api
-import Components.Navbar as Navbar
 import Dict exposing (Dict)
 import Html as H exposing (Html)
 import Html.Attributes as Attr
@@ -110,8 +109,7 @@ update msg model =
 view : Model mainMsg -> Html mainMsg
 view model =
     H.div []
-        [ Navbar.view model.session
-        , H.section
+        [ H.section
             [ Attr.class "todoapp" ]
             [ H.h1 [] [ H.text "Listen" ]
             , H.form [ Ev.onSubmit SubmitNeueListe ]
