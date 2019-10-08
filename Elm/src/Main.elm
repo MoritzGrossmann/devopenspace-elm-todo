@@ -94,10 +94,10 @@ initPage session route =
                 in
                 ( Login pageModel, pageCmd )
 
-            Routes.List listId filter ->
+            Routes.List listId ->
                 let
                     ( pageModel, pageCmd ) =
-                        TaskListPage.init ListMsg session filter listId
+                        TaskListPage.init ListMsg session
                 in
                 ( List pageModel, pageCmd )
 

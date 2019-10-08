@@ -1,15 +1,9 @@
 # devopenspace-elm-todo
 
-in diesem Schritt sollst Du eine Statusleiste oben in den `TaskList` und
-`TaskLists` Pages einbauen, die den eingeloggten Benutzer anzeigt.
+in diesem Schritt werden wir gemeinsam die Ansicht für die *Tasks* ergänzen
 
-Außerdem kannst Du noch einen Knopf/Link einfügen, der auf die `Login`-Seite
-navigiert und damit den Benutzer abmeldet.
-
----
-
-Im [Auth-Modul](./Elm/Auth.elm) kannst Du die `getUserName` Funktion verwenden
-um den angemeldeten Benutzer-Name aus der Session zu laden.
-
-Wir empfehlen als **Komponente** nur eine *einfache* `view` *Funktion* zu
-schreiben, die Leiste darstellt und die dann in den *Pages* zu verwenden.
+- `Model.Task` und `Model.Tasks` durchgehen
+- in `Routes.elm` sollte die Route angepasst werden, so dass der Filter als
+*Fragment* angehängt werden kann
+- Änderungen durchziehen
+- die `TaskList` Page muss gefüllt werden

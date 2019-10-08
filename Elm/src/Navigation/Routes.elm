@@ -3,7 +3,6 @@ module Navigation.Routes exposing (Route(..), locationToRoute, navigateTo, repla
 import Browser.Navigation as Nav
 import Flags
 import Models.TaskList as TaskList
-import Models.Tasks exposing (Filter(..))
 import Navigation.AppUrl exposing (BaseUrlPath, buildUrl)
 import Session exposing (Session)
 import Url exposing (Url)
@@ -12,7 +11,7 @@ import Url.Parser as UrlP exposing ((</>), Parser)
 
 type Route
     = Login
-    | List TaskList.Id Filter
+    | List TaskList.Id
     | Lists
 
 
@@ -56,18 +55,10 @@ routeToUrlString baseUrl targetRoute =
         Login ->
             buildUrl baseUrl [ "login" ] [] Nothing
 
-        List id filter ->
+        List id ->
             let
                 fragment =
-                    case filter of
-                        Active ->
-                            Just "active"
-
-                        Completed ->
-                            Just "completed"
-
-                        All ->
-                            Nothing
+                    Nothing
             in
             buildUrl baseUrl [ "list", TaskList.idToString id ] [] fragment
 
@@ -84,24 +75,9 @@ routeParser baseUrl =
                 |> List.filter (not << String.isEmpty)
                 |> List.map UrlP.s
                 |> List.foldr (</>) UrlP.top
-
-        filterParser =
-            Maybe.map
-                (\frag ->
-                    case frag of
-                        "active" ->
-                            Active
-
-                        "completed" ->
-                            Completed
-
-                        _ ->
-                            All
-                )
-                >> Maybe.withDefault All
     in
     UrlP.oneOf
-        [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.map TaskList.idFromInt UrlP.int </> UrlP.fragment filterParser)
+        [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.map TaskList.idFromInt UrlP.int)
         , UrlP.map Login (basePart </> UrlP.s "login")
         , UrlP.map Lists basePart
         ]

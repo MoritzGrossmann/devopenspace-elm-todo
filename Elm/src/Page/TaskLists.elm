@@ -8,7 +8,6 @@ import Html.Events as Ev
 import Http
 import Models.TaskList as TaskList exposing (TaskList)
 import Models.TaskLists as TaskLists exposing (TaskLists)
-import Models.Tasks exposing (Filter(..))
 import Navigation.Routes as Routes
 import RemoteData exposing (WebData)
 import Session exposing (Session)
@@ -144,7 +143,7 @@ viewListItem session listItem =
             [ H.div
                 [ Attr.class "open-count" ]
                 [ H.text (listItem.active |> String.fromInt) ]
-            , H.a [ Attr.href (Routes.routeToUrlString session.flags.baseUrlPath (Routes.List listItem.id All)) ]
+            , H.a [ Attr.href (Routes.routeToUrlString session.flags.baseUrlPath (Routes.List listItem.id)) ]
                 [ H.label [] [ H.text listItem.name ]
                 ]
             , H.button
