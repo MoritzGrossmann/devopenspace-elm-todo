@@ -2,7 +2,6 @@ module Navigation.Routes exposing (Route(..), locationToRoute, navigateTo, repla
 
 import Browser.Navigation as Nav
 import Flags
-import Models.TaskList as TaskList
 import Navigation.AppUrl exposing (BaseUrlPath, buildUrl)
 import Session exposing (Session)
 import Url exposing (Url)
@@ -11,7 +10,7 @@ import Url.Parser as UrlP exposing ((</>), Parser)
 
 type Route
     = Login
-    | List TaskList.Id
+    | List Int
     | Lists
 
 
@@ -60,7 +59,7 @@ routeToUrlString baseUrl targetRoute =
                 fragment =
                     Nothing
             in
-            buildUrl baseUrl [ "list", TaskList.idToString id ] [] fragment
+            buildUrl baseUrl [ "list", String.fromInt id ] [] fragment
 
         Lists ->
             buildUrl baseUrl [] [] Nothing
@@ -77,7 +76,7 @@ routeParser baseUrl =
                 |> List.foldr (</>) UrlP.top
     in
     UrlP.oneOf
-        [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.map TaskList.idFromInt UrlP.int)
+        [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.int)
         , UrlP.map Login (basePart </> UrlP.s "login")
         , UrlP.map Lists basePart
         ]
