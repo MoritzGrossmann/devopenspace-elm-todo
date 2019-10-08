@@ -1,4 +1,4 @@
 {
-    "elm.compiler": "node_modules/.bin/elm",
-    "elm.formatCommand": "node_modules/.bin/elm-format"
+    "elm.formatCommand": "npx elm-format",
+    "elm.compiler": "npx elm"
 }

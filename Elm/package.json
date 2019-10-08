@@ -5,9 +5,8 @@
   "main": "./dist/app.js",
   "scripts": {
     "start": "parcel serve index.html --no-cache",
-    "clean": "rimraf elm-stuff",
-    "build": "elm make ./src/Main.elm --output ./dist/app.js",
-    "release": "npm run clean && cp node_modules/todomvc-app-css/index.css ../Backend/Haskell/static/index.css && cp node_modules/todomvc-common/base.css ../Backend/Haskell/static/base.css && cp ports.js ../Backend/Haskell/static/ports.js && elm make ./src/Main.elm --optimize --output ../Backend/Haskell/static/todo.js"
+    "clean": "rimraf elm-stuff dist",
+    "build": "elm make ./src/Main.elm --output ./dist/app.js"
   },
   "author": "Moritz Großmann, Carsten König",
   "license": "ISC",

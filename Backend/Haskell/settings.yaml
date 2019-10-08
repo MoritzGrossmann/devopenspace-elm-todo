@@ -1,8 +1,0 @@
-serverPort: 8080
-authConfig:
-  jwtKey:
-    k: 1g6MM3fvJLKOAfYSUL2ksF-B4Vfonof9XaHUxWoS7V4PM_JghoR691XP87T7RYjo_cBSUQKq5R6gXbT2h4GAp_GbvcYrP9AZK75gAOLCG-n_8rXLa93FTNsdOq8gJHWOuQWnBQ8yJd_U9nRI4YLjPAIbJEGsxWTwksrTwzl_ph5jsL4LnXbWPLPJGpFcF-DHN3gZoQ_3xX0gUf2oBVm7cCBFYX19zd_9xif6thHACuoXK5lGTSvfFWdFIVifMW0EzrWm-bL3EsY72gDDxG3qXPwbWgiIGeWruIPpGQVi_fLf0wdfEb2XtfxYXRJrt5h6DV1vs-zVrPu5-PMvYjy5iQ
-    kty: oct
-databasePath: ./todos.db
-siteBaseUrl: /
-apiBaseUrl: /api
