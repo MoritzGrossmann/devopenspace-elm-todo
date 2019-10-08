@@ -1,6 +1,5 @@
 module Page.TaskList exposing (Model, Msg, init, subscriptions, update, view)
 
-import Api.Task as Api
 import Api.TaskList as ApiList
 import Browser.Dom as Dom
 import Html as H exposing (Html)
@@ -8,9 +7,7 @@ import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Decode as Json
-import Models.Task as Task exposing (Task)
 import Models.TaskList as TaskList exposing (TaskList)
-import Models.Tasks as Tasks exposing (Filter(..), Tasks)
 import Navigation.Routes as Routes
 import RemoteData exposing (WebData)
 import Session exposing (Session)
@@ -39,24 +36,6 @@ init wrap session =
 subscriptions : Model mainMsg -> Sub mainMsg
 subscriptions _ =
     Sub.none
-
-
-activeCount : Tasks -> Int
-activeCount tasks =
-    List.length (tasks |> Tasks.activeTasks)
-
-
-filtered : Filter -> Tasks -> List Task
-filtered filter =
-    case filter of
-        All ->
-            Tasks.allTasks
-
-        Active ->
-            Tasks.activeTasks
-
-        Completed ->
-            Tasks.completedTasks
 
 
 update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )

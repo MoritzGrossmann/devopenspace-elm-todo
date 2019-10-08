@@ -1,6 +1,5 @@
 module Navigation.AppUrl exposing (..)
 
-import Models.Task as Task
 import Models.TaskList as TaskList
 import Url.Builder as Url
 
@@ -41,11 +40,6 @@ apiListPostNewUrl flags =
     buildApiUrlFromFlags flags [ "list" ] [] Nothing
 
 
-apiTaskGetByIdUrl : Flags f -> Task.Id -> Url
-apiTaskGetByIdUrl flags tId =
-    buildApiUrlFromFlags flags [ "todos", Task.idToString tId ] [] Nothing
-
-
 apiTaskGetAllUrl : Flags f -> TaskList.Id -> Url
 apiTaskGetAllUrl flags lId =
     buildApiUrlFromFlags flags [ "list", TaskList.idToString lId, "todos" ] [] Nothing
@@ -54,16 +48,6 @@ apiTaskGetAllUrl flags lId =
 apiTaskUpdateUrl : Flags f -> Url
 apiTaskUpdateUrl flags =
     buildApiUrlFromFlags flags [ "todos" ] [] Nothing
-
-
-apiTaskDeleteUrl : Flags f -> Task.Id -> Url
-apiTaskDeleteUrl flags tId =
-    buildApiUrlFromFlags flags [ "todos", Task.idToString tId ] [] Nothing
-
-
-apiTaskPostNewUrl : Flags f -> TaskList.Id -> Url
-apiTaskPostNewUrl flags lId =
-    buildApiUrlFromFlags flags [ "list", TaskList.idToString lId, "todos" ] [] Nothing
 
 
 apiUserLoginUrl : Flags f -> Url
