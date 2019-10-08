@@ -10,7 +10,6 @@ import Url.Parser as UrlP exposing ((</>), Parser)
 
 type Route
     = Login
-    | List Int
     | Lists
 
 
@@ -54,13 +53,6 @@ routeToUrlString baseUrl targetRoute =
         Login ->
             buildUrl baseUrl [ "login" ] [] Nothing
 
-        List id ->
-            let
-                fragment =
-                    Nothing
-            in
-            buildUrl baseUrl [ "list", String.fromInt id ] [] fragment
-
         Lists ->
             buildUrl baseUrl [] [] Nothing
 
@@ -76,7 +68,6 @@ routeParser baseUrl =
                 |> List.foldr (</>) UrlP.top
     in
     UrlP.oneOf
-        [ UrlP.map List (basePart </> UrlP.s "list" </> UrlP.int)
-        , UrlP.map Login (basePart </> UrlP.s "login")
+        [ UrlP.map Login (basePart </> UrlP.s "login")
         , UrlP.map Lists basePart
         ]

@@ -6,7 +6,6 @@ import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import Navigation.Routes as Routes exposing (Route)
 import Page.Login as LoginPage
-import Page.TaskList as TaskListPage
 import Page.TaskLists as TaskListsPage
 import Session exposing (Session)
 import Url exposing (Url)
@@ -58,7 +57,6 @@ init flags location key =
 
 type Model
     = Login (LoginPage.Model Msg)
-    | List (TaskListPage.Model Msg)
     | Lists (TaskListsPage.Model Msg)
 
 
@@ -67,7 +65,6 @@ type Msg
     | UrlRequested UrlRequest
     | UrlChanged Url
     | LoginMsg LoginPage.Msg
-    | ListMsg TaskListPage.Msg
     | ListsMsg TaskListsPage.Msg
 
 
@@ -88,13 +85,6 @@ initPage session route =
                         LoginPage.init LoginMsg session Nothing
                 in
                 ( Login pageModel, pageCmd )
-
-            Routes.List listId ->
-                let
-                    ( pageModel, pageCmd ) =
-                        TaskListPage.init ListMsg session
-                in
-                ( List pageModel, pageCmd )
 
             Routes.Lists ->
                 let
@@ -143,9 +133,6 @@ update msg model =
                         in
                         ( page, Cmd.batch [ pageCmd, replaceUrl model Routes.Lists ] )
 
-        ListMsg pageMsg ->
-            updateList pageMsg model
-
         LoginMsg pageMsg ->
             updateLogin pageMsg model
 
@@ -162,20 +149,6 @@ updateLogin msg pageModel =
                     LoginPage.update msg loginModel
             in
             ( Login newLoginModel, cmd )
-
-        _ ->
-            ( pageModel, Cmd.none )
-
-
-updateList : TaskListPage.Msg -> Model -> ( Model, Cmd Msg )
-updateList msg pageModel =
-    case pageModel of
-        List listModel ->
-            let
-                ( newListModel, cmd ) =
-                    TaskListPage.update msg listModel
-            in
-            ( List newListModel, cmd )
 
         _ ->
             ( pageModel, Cmd.none )
@@ -200,9 +173,6 @@ view model =
     let
         page =
             case model of
-                List listModel ->
-                    TaskListPage.view listModel
-
                 Login loginModel ->
                     LoginPage.view loginModel
 
@@ -217,9 +187,6 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model of
-        List listModel ->
-            TaskListPage.subscriptions listModel
-
         Login loginModel ->
             LoginPage.subscriptions loginModel
 
@@ -230,9 +197,6 @@ subscriptions model =
 updateSession : (Session -> Session) -> Model -> Model
 updateSession upd model =
     case model of
-        List page ->
-            List { page | session = upd page.session }
-
         Login page ->
             Login { page | session = upd page.session }
 
@@ -243,9 +207,6 @@ updateSession upd model =
 withSession : (Session -> a) -> Model -> a
 withSession with model =
     case model of
-        List page ->
-            with page.session
-
         Login page ->
             with page.session
 
