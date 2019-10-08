@@ -10,7 +10,6 @@ import Url.Parser as UrlP exposing ((</>), Parser)
 
 type Route
     = Login
-    | Lists
 
 
 navigateTo : Session -> Route -> Cmd msg
@@ -53,9 +52,6 @@ routeToUrlString baseUrl targetRoute =
         Login ->
             buildUrl baseUrl [ "login" ] [] Nothing
 
-        Lists ->
-            buildUrl baseUrl [] [] Nothing
-
 
 routeParser : BaseUrlPath -> Parser (Route -> a) a
 routeParser baseUrl =
@@ -69,5 +65,4 @@ routeParser baseUrl =
     in
     UrlP.oneOf
         [ UrlP.map Login (basePart </> UrlP.s "login")
-        , UrlP.map Lists basePart
         ]

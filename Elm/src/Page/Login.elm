@@ -160,7 +160,8 @@ updateMain msg model =
                     in
                     ( { model | session = newSession, result = RemoteData.succeed () }
                     , Cmd.batch
-                        [ Routes.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Lists)
+                        -- TODO nach lists
+                        [ Routes.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Login)
                         ]
                         |> Cmd.map model.map
                     )

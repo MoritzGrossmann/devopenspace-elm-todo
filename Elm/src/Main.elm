@@ -6,7 +6,6 @@ import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import Navigation.Routes as Routes exposing (Route)
 import Page.Login as LoginPage
-import Page.TaskLists as TaskListsPage
 import Session exposing (Session)
 import Url exposing (Url)
 
@@ -37,12 +36,14 @@ init flags location key =
 
                 Nothing ->
                     let
+                        -- TODO nach Lists navigieren
                         ( initModel, initCmd ) =
-                            initPage session Routes.Lists
+                            initPage session Routes.Login
                     in
                     ( initModel
                     , Cmd.batch
-                        [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Lists)
+                        -- TODO mit Lists erzetzen
+                        [ Nav.replaceUrl key (Routes.routeToUrlString flags.baseUrlPath Routes.Login)
                         , initCmd
                         ]
                     )
@@ -57,7 +58,6 @@ init flags location key =
 
 type Model
     = Login (LoginPage.Model Msg)
-    | Lists (TaskListsPage.Model Msg)
 
 
 type Msg
@@ -65,7 +65,6 @@ type Msg
     | UrlRequested UrlRequest
     | UrlChanged Url
     | LoginMsg LoginPage.Msg
-    | ListsMsg TaskListsPage.Msg
 
 
 initPage : Session -> Route -> ( Model, Cmd Msg )
@@ -86,13 +85,6 @@ initPage session route =
                 in
                 ( Login pageModel, pageCmd )
 
-            Routes.Lists ->
-                let
-                    ( pageModel, pageCmd ) =
-                        TaskListsPage.init ListsMsg session
-                in
-                ( Lists pageModel, pageCmd )
-
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -105,7 +97,8 @@ update msg model =
                 Browser.Internal url ->
                     case locationToRoute model url of
                         Nothing ->
-                            ( model, navigateTo model Routes.Lists )
+                            -- TODO nach Lists navigieren
+                            ( model, navigateTo model Routes.Login )
 
                         Just route ->
                             ( model, navigateTo model route )
@@ -129,15 +122,14 @@ update msg model =
                     Nothing ->
                         let
                             ( page, pageCmd ) =
-                                initPage (getSession model) Routes.Lists
+                                -- TODO zu Lists
+                                initPage (getSession model) Routes.Login
                         in
-                        ( page, Cmd.batch [ pageCmd, replaceUrl model Routes.Lists ] )
+                        -- TODO zu Lists
+                        ( page, Cmd.batch [ pageCmd, replaceUrl model Routes.Login ] )
 
         LoginMsg pageMsg ->
             updateLogin pageMsg model
-
-        ListsMsg pageMsg ->
-            updateLists pageMsg model
 
 
 updateLogin : LoginPage.Msg -> Model -> ( Model, Cmd Msg )
@@ -150,23 +142,6 @@ updateLogin msg pageModel =
             in
             ( Login newLoginModel, cmd )
 
-        _ ->
-            ( pageModel, Cmd.none )
-
-
-updateLists : TaskListsPage.Msg -> Model -> ( Model, Cmd Msg )
-updateLists msg pageModel =
-    case pageModel of
-        Lists listsModel ->
-            let
-                ( newListsModel, cmd ) =
-                    TaskListsPage.update msg listsModel
-            in
-            ( Lists newListsModel, cmd )
-
-        _ ->
-            ( pageModel, Cmd.none )
-
 
 view : Model -> Document Msg
 view model =
@@ -175,9 +150,6 @@ view model =
             case model of
                 Login loginModel ->
                     LoginPage.view loginModel
-
-                Lists listsModel ->
-                    TaskListsPage.view listsModel
     in
     { title = "TODO - Elm"
     , body = [ page ]
@@ -190,9 +162,6 @@ subscriptions model =
         Login loginModel ->
             LoginPage.subscriptions loginModel
 
-        Lists listsModel ->
-            TaskListsPage.subscriptions listsModel
-
 
 updateSession : (Session -> Session) -> Model -> Model
 updateSession upd model =
@@ -200,17 +169,11 @@ updateSession upd model =
         Login page ->
             Login { page | session = upd page.session }
 
-        Lists page ->
-            Lists { page | session = upd page.session }
-
 
 withSession : (Session -> a) -> Model -> a
 withSession with model =
     case model of
         Login page ->
-            with page.session
-
-        Lists page ->
             with page.session
 
 

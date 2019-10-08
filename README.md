@@ -2,6 +2,12 @@
 
 in diesem Schritt führen wir das Navigationsmodel von Elm ein
 
-## Übung
+die Basis ist schon angelegt und die Login-Page in eine Seite konvertiert
 
-Route und Page ergänzen für `List` Route mit `/{listNr}` URL
+- `Login` Page durchgehen und erklären
+- `Routes` Modul erklären
+- Änderungen in `Main` durchgehen
+- Routes ergänzen für `Lists` (mit URL `/`)
+- Page für Lists erstellen
+- Main ergänzen und TODOs auflösen
+- TODOS in Login auflösen
