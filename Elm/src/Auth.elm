@@ -48,11 +48,10 @@ import Flags exposing (Flags)
 import Http
 import Json.Decode as Json
 import Json.Encode as Enc
-import LocalStorage as LS
+import Jwt
 import Navigation.AppUrl as AppUrl
 import String.Interpolate as String
 import Url.Builder as Url
-import Jwt
 
 
 {-| einfacher Wrapper um ein JWT Token wie es aus dem LocalStorage oder vom
@@ -162,7 +161,7 @@ weiterverarbeitet wird
 -}
 requestLocalStorageAuth : Cmd msg
 requestLocalStorageAuth =
-    LS.request localStorageAuthorizationKey
+    Cmd.none
 
 
 {-| reagiert äuf Rückmeldungen über das 'LocalStorage.receive' Port, die den
@@ -192,18 +191,7 @@ aus Bequemlichkeitsgründen
 -}
 watchLocalStorage : msg -> ((ModelWithAuth m -> ModelWithAuth m) -> msg) -> Sub msg
 watchLocalStorage noOpMsg toUpdMsg =
-    let
-        decide ( key, newValue ) =
-            if key == localStorageAuthorizationKey then
-                maybeUpdate newValue
-
-            else
-                noOpMsg
-
-        maybeUpdate =
-            Maybe.map (AuthToken >> setAuthenticated >> toUpdMsg) >> Maybe.withDefault (toUpdMsg clearAuthentication)
-    in
-    LS.receive decide
+    Sub.none
 
 
 {-| Überschreibt den LocalStorage Eintrag je nach übergebenen Zustand
@@ -223,15 +211,15 @@ updateLocalStorage auth =
 
 setStoreToken : AuthToken -> Cmd msg
 setStoreToken (AuthToken token) =
-    LS.store ( localStorageAuthorizationKey, Just (Enc.string token) )
+    Cmd.none
 
 
 resetStoreToken : Cmd msg
 resetStoreToken =
-    LS.store ( localStorageAuthorizationKey, Nothing )
+    Cmd.none
 
 
-localStorageAuthorizationKey : LS.StorageKey
+localStorageAuthorizationKey : String
 localStorageAuthorizationKey =
     "Authorization"
 
@@ -344,20 +332,24 @@ jwtDecoder =
     Json.map Jwt
         (Json.field "dat" (Json.map JwtDatPart (Json.field "auName" Json.string)))
 
+
 type alias Jwt =
     { dat : JwtDatPart
     }
 
+
 type alias JwtDatPart =
-    { auName : String 
+    { auName : String
     }
+
 
 getUserName : { a | authentication : Authentication } -> Maybe String
 getUserName session =
     case session.authentication of
         Authenticated (AuthToken token) ->
-            (Jwt.decodeToken jwtDecoder token) 
+            Jwt.decodeToken jwtDecoder token
                 |> Result.map (\jwt -> jwt.dat.auName)
                 |> Result.toMaybe
+
         _ ->
             Nothing

@@ -3,7 +3,6 @@ module Page.LoginPending exposing (Model, Msg, init, subscriptions, update, view
 import Auth
 import Debug
 import Html as H exposing (Html)
-import LocalStorage
 import Navigation.Routes as Routes exposing (Route)
 import Session exposing (Session)
 

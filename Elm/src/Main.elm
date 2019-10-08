@@ -4,7 +4,6 @@ import Auth
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Flags exposing (Flags)
-import LocalStorage
 import Navigation.Routes as Routes exposing (Route)
 import Page.Login as LoginPage
 import Page.LoginPending as LoginPending
