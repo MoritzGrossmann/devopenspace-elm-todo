@@ -20,8 +20,9 @@ module Db.Tasks
 
 import           Context.Internal
 import           Control.Effect.Reader (Reader)
+import           Control.Monad (when)
 import           Control.Monad.Reader (MonadReader)
-import           Data.Maybe (listToMaybe)
+import           Data.Maybe (listToMaybe, fromMaybe)
 import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
@@ -39,13 +40,21 @@ data TasksTag
 runTasksActionDb :: ActionDbCarrier TasksTag m a -> m a
 runTasksActionDb = runActionDbCarrier
 
+
+maxTasksPerList :: Int
+maxTasksPerList = 10
+
+
 instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
   => Carrier (TaskAction :+: sig) (ActionDbCarrier TasksTag m) where
   eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
   eff (L (CheckAccess userName lId k)) = k =<< (liftDb $ DbL.listExists userName lId)
   eff (L (Get userName taskId k)) = k =<< (liftDb $ getTask userName taskId)
   eff (L (List userName lId k)) = k =<< (liftDb $ listTasks userName lId)
-  eff (L (Create userName lId taskText k)) = k =<< (liftDb $ insertTask userName lId taskText)
+  eff (L (Create userName lId taskText k)) = k =<< (liftDb $ do
+    taskCount <- countTasks userName lId
+    when (taskCount >= maxTasksPerList) (error "too many task for this list")
+    insertTask userName lId taskText)
   eff (L (Delete userName taskId k)) = k =<< (liftDb $ do
     deleteTask userName taskId
     pure True )
@@ -64,11 +73,21 @@ createTables = useHandle $ \conn ->
 
 getTask :: (MonadReader Handle m, MonadIO m) => UserName -> TaskId -> m (Maybe Task)
 getTask userName tId = useHandle $ \conn ->
-  listToMaybe . map toTask <$> Sql.queryNamed conn 
-    "SELECT listId,task,finished FROM todos WHERE rowid = :id AND user = :user" 
+  listToMaybe . map toTask <$> Sql.queryNamed conn
+    "SELECT listId,task,finished FROM todos WHERE rowid = :id AND user = :user"
     [ ":id" := tId, ":user" := userName ]
   where
     toTask (lId,txt,fin) = Task tId (ListId lId) txt fin
+
+
+countTasks :: (MonadReader Handle m, MonadIO m) => UserName -> ListId -> m Int
+countTasks userName lId = useHandle $ \conn ->
+  fromMaybe 0 . listToMaybe . map toCount <$> Sql.queryNamed conn
+    "SELECT COUNT(*) as cnt, 1 as one FROM todos where user = :user AND listId = :listId"
+    [ ":user" := userName, ":listId" := lId ]
+  where
+    toCount :: (Int, Int) -> Int
+    toCount (cnt, _) = cnt
 
 
 listTasks :: (MonadReader Handle m, MonadIO m) => UserName -> ListId -> m [Task]
