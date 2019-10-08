@@ -33,6 +33,7 @@ import qualified Servant.Swagger as Sw
 import qualified Servant.Swagger.UI as SwUI
 import           Settings (Settings(..), loadSettings, toPageConfig)
 
+
 startApp :: FilePath -> IO ()
 startApp settingsPath = do
   settings@Settings{..} <- loadSettings settingsPath
@@ -41,7 +42,10 @@ startApp settingsPath = do
   putStrLn $ "initializing Database in " ++ databasePath
   dbHandle <- Db.initDb databasePath
 
-  let context = Context dbHandle (Auth.toSettings authConfig)
+  putStrLn $ "max User: " ++ (maybe "inf." show maxUsers)
+  putStrLn $ "max Lists per User: " ++ (maybe "inf." show maxListsPerUser)
+  putStrLn $ "max Tasks per List: " ++ (maybe "inf." show maxTasksPerList)
+  let context = Context dbHandle (Auth.toSettings authConfig) maxUsers maxListsPerUser maxTasksPerList
 
   putStrLn $ "starting Server on " ++ show serverPort
   run serverPort $ app context (toPageConfig settings)

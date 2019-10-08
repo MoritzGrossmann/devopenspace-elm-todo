@@ -18,6 +18,7 @@ module Db.Tasks
   , runTasksActionDb
   ) where
 
+import qualified Context
 import           Context.Internal
 import           Control.Effect.Reader (Reader)
 import           Control.Monad (when)
@@ -41,20 +42,19 @@ runTasksActionDb :: ActionDbCarrier TasksTag m a -> m a
 runTasksActionDb = runActionDbCarrier
 
 
-maxTasksPerList :: Int
-maxTasksPerList = 10
-
-
 instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
   => Carrier (TaskAction :+: sig) (ActionDbCarrier TasksTag m) where
   eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
   eff (L (CheckAccess userName lId k)) = k =<< (liftDb $ DbL.listExists userName lId)
   eff (L (Get userName taskId k)) = k =<< (liftDb $ getTask userName taskId)
   eff (L (List userName lId k)) = k =<< (liftDb $ listTasks userName lId)
-  eff (L (Create userName lId taskText k)) = k =<< (liftDb $ do
-    taskCount <- countTasks userName lId
-    when (taskCount >= maxTasksPerList) (error "too many task for this list")
-    insertTask userName lId taskText)
+  eff (L (Create userName lId taskText k)) = do
+    maxTasksPerList <- Context.getMaxUsers
+    inserted <- liftDb $ do
+      taskCount <- countTasks userName lId
+      when (maybe False (taskCount >=) maxTasksPerList) (error "too many task for this list")
+      insertTask userName lId taskText
+    k inserted
   eff (L (Delete userName taskId k)) = k =<< (liftDb $ do
     deleteTask userName taskId
     pure True )

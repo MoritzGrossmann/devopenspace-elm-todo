@@ -6,3 +6,6 @@ authConfig:
 databasePath: ./todos.db
 siteBaseUrl: /
 apiBaseUrl: /api
+maxUsers: 25
+maxListsPerUser: 5
+maxTasksPerList: 9

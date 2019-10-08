@@ -12,4 +12,7 @@ import qualified Servant.Auth.Server as SAS
 data Context = Context
   { contextDbHandle :: Db.Handle
   , contextJwtSettings :: SAS.JWTSettings
+  , contextMaxUsers :: Maybe Int
+  , contextMaxListsPerUser :: Maybe Int
+  , contextMaxTasksPerList :: Maybe Int
   }

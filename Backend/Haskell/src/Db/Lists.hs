@@ -24,6 +24,7 @@ module Db.Lists
   , runListsActionDb
   ) where
 
+import qualified Context
 import           Context.Internal
 import           Control.Effect.Carrier (Carrier(..), (:+:)(..), handleCoercible)
 import           Control.Effect.Reader (Reader)
@@ -46,9 +47,6 @@ data ListsTag
 runListsActionDb :: ActionDbCarrier ListsTag m a -> m a
 runListsActionDb = runActionDbCarrier
 
-maxListsPerUser :: Int
-maxListsPerUser = 5
-
 instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
   => Carrier (ListAction :+: sig) (ActionDbCarrier ListsTag m) where
   eff (R other) = ActionDbCarrier (eff $ handleCoercible other)
@@ -58,11 +56,13 @@ instance (Carrier sig m, MonadIO m, Has (Reader Context) sig m)
     liftDb (getList userName listId) >>= k
   eff (L (GetAll userName k)) =
     liftDb (listLists userName) >>= k
-  eff (L (Create userName text k)) = k =<< (liftDb $ do
-    listCount <- countLists userName
-    when (listCount >= maxListsPerUser) (error "too many lists for this user")
-    insertList userName text
-    )
+  eff (L (Create userName text k)) = do
+    maxListsPerUser <- Context.getMaxListsPerUser
+    inserted <- liftDb $ do
+      listCount <- countLists userName
+      when (maybe False (listCount >=) maxListsPerUser) (error "too many lists for this user")
+      insertList userName text
+    k inserted
   eff (L (Delete userName listId k)) = do
     liftDb $ deleteList userName listId
     k

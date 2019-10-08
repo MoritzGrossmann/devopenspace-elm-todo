@@ -17,18 +17,21 @@ import           Data.Yaml (encodeFile, decodeFileEither)
 import qualified Page
 
 data Settings = Settings
-  { serverPort   :: Int
-  , databasePath :: FilePath
-  , siteBaseUrl  :: String
-  , apiBaseUrl   :: String
-  , authConfig   :: Auth.Config
+  { serverPort      :: Int
+  , databasePath    :: FilePath
+  , siteBaseUrl     :: String
+  , apiBaseUrl      :: String
+  , authConfig      :: Auth.Config
+  , maxUsers        :: Maybe Int
+  , maxListsPerUser :: Maybe Int
+  , maxTasksPerList :: Maybe Int
   }
 
 $(deriveJSON defaultOptions ''Settings)
 
 defaultSettings :: IO Settings
 defaultSettings =
-  Settings 8080 "./todos.db" "/" "/api" <$> Auth.newConfig
+  Settings 8080 "./todos.db" "/" "/api" <$> Auth.newConfig <*> pure Nothing <*> pure Nothing <*> pure Nothing
 
 loadSettings :: FilePath -> IO Settings
 loadSettings settingsPath = do
