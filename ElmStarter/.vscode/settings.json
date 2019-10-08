@@ -1,0 +1,4 @@
+{
+    "elm.formatCommand": "npx elm-format",
+    "elm.compiler": "npx elm"
+}
