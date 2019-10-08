@@ -1,8 +1,8 @@
 # devopenspace-elm-todo
 
-in diesem Schritt implementieren wir die Kommunikation mit dem Backend
-für das Login.
+in diesen Schritt füllen wir das Login etwas mit Leben
 
-- `Auth` Modul vorstellen
-- Änderungen in `Session`
-- TODOs in `Login` bearbeiten
+## Übung
+
+Der **OK** Knopf soll `disabled` bleiben solange `username` oder `password`
+leer sind.

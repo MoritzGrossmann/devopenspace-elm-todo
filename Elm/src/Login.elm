@@ -10,13 +10,11 @@ module Login exposing
 ----------------------------------------------------------------------------
 -- Model
 
-import Auth
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Encode as Enc
-import RemoteData exposing (WebData)
 import Session exposing (Session)
 
 
@@ -24,21 +22,7 @@ type alias Model =
     { session : Session
     , username : String
     , password : String
-
-    -- Soll den Zustand von Requests erfassen
-    , result : WebData ()
     }
-
-
-isLoading : Model -> Bool
-isLoading model =
-    -- TODO Implementieren
-    False
-
-
-isValidInput : Model -> Bool
-isValidInput model =
-    not (String.isEmpty <| String.trim model.username) && not (String.isEmpty <| String.trim model.password)
 
 
 
@@ -55,11 +39,9 @@ type Msg
 
 init : Session -> ( Model, Cmd msg )
 init session =
-    -- TODO: Auth. in Session reseten
     ( { session = session
       , username = ""
       , password = ""
-      , result = RemoteData.NotAsked
       }
     , Cmd.none
     )
@@ -78,12 +60,7 @@ update msg model =
             ( { model | password = password }, Cmd.none )
 
         Submit ->
-            if isValidInput model then
-                -- TODO: result setzen
-                ( model, Cmd.none )
-
-            else
-                ( model, Cmd.none )
+            ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -99,7 +76,6 @@ view model =
         , H.form [ Ev.onSubmit Submit ]
             [ H.input
                 [ Attr.class "new-todo"
-                , Attr.disabled (isLoading model)
                 , Attr.placeholder "username"
                 , Attr.autofocus True
                 , Attr.value model.username
@@ -108,7 +84,6 @@ view model =
                 []
             , H.input
                 [ Attr.class "new-todo"
-                , Attr.disabled (isLoading model)
                 , Attr.placeholder "password"
                 , Attr.value model.password
                 , Attr.type_ "password"
@@ -122,4 +97,4 @@ view model =
 
 viewSubmitButton : Model -> Html Msg
 viewSubmitButton model =
-    H.button [ Attr.type_ "submit", Attr.disabled (not <| isValidInput model) ] [ H.text "OK" ]
+    H.button [ Attr.type_ "submit" ] [ H.text "OK" ]

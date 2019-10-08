@@ -1,6 +1,5 @@
 module Main exposing (main)
 
-import Auth
 import Browser exposing (Document, UrlRequest)
 import Flags exposing (Flags)
 import Login

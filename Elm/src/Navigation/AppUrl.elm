@@ -16,20 +16,6 @@ type alias Flags f =
 
 
 
--- API URLs
-
-
-apiUserLoginUrl : Flags f -> Url
-apiUserLoginUrl flags =
-    buildApiUrlFromFlags flags [ "user", "login" ] [] Nothing
-
-
-apiUserRegisterUrl : Flags f -> Url
-apiUserRegisterUrl flags =
-    buildApiUrlFromFlags flags [ "user", "register" ] [] Nothing
-
-
-
 -- Funktionen zum Erstellen / Zusammenbauen von URLs
 
 
