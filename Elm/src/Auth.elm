@@ -1,7 +1,6 @@
 module Auth exposing
     ( AuthToken, Authentication(..), ModelWithAuth
     , init, isAuthenticated, isNotQueried, clearAuthentication
-    , requestLocalStorageAuth, watchLocalStorage, updateLocalStorage
     , httpLogin, httpRegister, basicAuthHeader, bearerAuthHeader
     , getUserName
     )
@@ -30,11 +29,6 @@ wird dabei _implizit_ über das Token ermittelt.
 # nützliche Hilfsfunktionen und Eigenschaftsabfragen
 
 @docs init, isAuthenticated, isNotQueried, clearAuthentication
-
-
-# LocalStorage
-
-@docs requestLocalStorageAuth, watchLocalStorage, updateLocalStorage
 
 
 # API Requests
@@ -145,83 +139,6 @@ updateAuthentication newAuth model =
 setAuthenticated : AuthToken -> ModelWithAuth m -> ModelWithAuth m
 setAuthenticated newToken =
     updateAuthentication (Authenticated newToken)
-
-
-
--- LocalStorage
-
-
-{-| verwendet ein Port aus dem 'LocalStorage' Modul um zu versuchen den
-'localStorageAuthorizationKey' zu laden.
-
-Das Port sollte im _JavaScript_-Interop der App eine Antwort über
-'LocalStorage.receive' zurückschicken, die hier über 'watchLocalStorage'
-weiterverarbeitet wird
-
--}
-requestLocalStorageAuth : Cmd msg
-requestLocalStorageAuth =
-    Cmd.none
-
-
-{-| reagiert äuf Rückmeldungen über das 'LocalStorage.receive' Port, die den
-'localStorageAuthroizationKey' betreffen.
-
-Das geschieht entweder als Antwort auf 'requestLocalStorageAuth' oder wenn
-sich der Inhalt im _LocalStorage_ ändert.
-
-Die Nachricht vom ersten Argument wird zurückgegeben, die Nachricht aus _JS_ über
-das Port den Schlüssel nicht betroffen hat (z.B. wenn sich ein anderes
-Schlüssel/Wert-Paar geändert hat).
-
-Wenn die Antwort diesesn Schlüssel betrifft, wird das zweite Argument verwendet
-um eine Model/Session-Änderung an den Aufrufer weiterzugeben, die
-das Token in dieser Session auf den gefundenen Wert setzt oder falls der Wert
-leer oder nicht vorhanden war zurücksetzt ('Authenticated' oder 'NotAuthenticated')
-
-Der Aufrufer sollte das nutzen um die Session zu ändern.
-
-Der Nachteil dieses Vorgehens ist, dass die Nachrichten beim Debuggen im Elm-
-Debugger nicht mehr exporiert/importiert werden können (weil hier Funktionen
-übergeben werden). Wenn das ein Problem ist müssten wir diese Funktion durch
-einen Typ ersetzen, der die beiden Alternativen (Set/Reset) als Daten weitergibt
-(die Technik nennt sich _Defunctionalization_) - ich erspar mir die Arbeit hier
-aus Bequemlichkeitsgründen
-
--}
-watchLocalStorage : msg -> ((ModelWithAuth m -> ModelWithAuth m) -> msg) -> Sub msg
-watchLocalStorage noOpMsg toUpdMsg =
-    Sub.none
-
-
-{-| Überschreibt den LocalStorage Eintrag je nach übergebenen Zustand
--}
-updateLocalStorage : Authentication -> Cmd msg
-updateLocalStorage auth =
-    case auth of
-        NotQueried ->
-            Cmd.none
-
-        NotAuthenticated ->
-            resetStoreToken
-
-        Authenticated authToken ->
-            setStoreToken authToken
-
-
-setStoreToken : AuthToken -> Cmd msg
-setStoreToken (AuthToken token) =
-    Cmd.none
-
-
-resetStoreToken : Cmd msg
-resetStoreToken =
-    Cmd.none
-
-
-localStorageAuthorizationKey : String
-localStorageAuthorizationKey =
-    "Authorization"
 
 
 

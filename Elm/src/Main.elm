@@ -6,7 +6,6 @@ import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import Navigation.Routes as Routes exposing (Route)
 import Page.Login as LoginPage
-import Page.LoginPending as LoginPending
 import Page.TaskList as TaskListPage
 import Page.TaskLists as TaskListsPage
 import Session exposing (Session)
@@ -59,7 +58,6 @@ init flags location key =
 
 type Model
     = Login (LoginPage.Model Msg)
-    | LoginPending (LoginPending.Model Msg)
     | List (TaskListPage.Model Msg)
     | Lists (TaskListsPage.Model Msg)
 
@@ -68,9 +66,7 @@ type Msg
     = NoOp
     | UrlRequested UrlRequest
     | UrlChanged Url
-    | AuthorizationStoreChanged (Session -> Session)
     | LoginMsg LoginPage.Msg
-    | LoginPendingMsg LoginPending.Msg
     | ListMsg TaskListPage.Msg
     | ListsMsg TaskListsPage.Msg
 
@@ -80,9 +76,9 @@ initPage session route =
     if not (Auth.isAuthenticated session) && route /= Routes.Login then
         let
             ( pageModel, pageCmd ) =
-                LoginPending.init LoginPendingMsg session (Just route)
+                LoginPage.init LoginMsg session (Just route)
         in
-        ( LoginPending pageModel, pageCmd )
+        ( Login pageModel, pageCmd )
 
     else
         case route of
@@ -113,20 +109,6 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
-
-        AuthorizationStoreChanged updSession ->
-            let
-                newModel =
-                    updateSession updSession model
-
-                navCmd =
-                    if withSession Auth.isAuthenticated newModel then
-                        Cmd.none
-
-                    else
-                        navigateTo model Routes.Login
-            in
-            ( newModel, navCmd )
 
         UrlRequested urlRequest ->
             case urlRequest of
@@ -170,9 +152,6 @@ update msg model =
         ListsMsg pageMsg ->
             updateLists pageMsg model
 
-        LoginPendingMsg pageMsg ->
-            updateLoginPending pageMsg model
-
 
 updateLogin : LoginPage.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg pageModel =
@@ -183,20 +162,6 @@ updateLogin msg pageModel =
                     LoginPage.update msg loginModel
             in
             ( Login newLoginModel, cmd )
-
-        _ ->
-            ( pageModel, Cmd.none )
-
-
-updateLoginPending : LoginPending.Msg -> Model -> ( Model, Cmd Msg )
-updateLoginPending msg pageModel =
-    case pageModel of
-        LoginPending loginPendingModel ->
-            let
-                ( newLoginPendingModel, cmd ) =
-                    LoginPending.update msg loginPendingModel
-            in
-            ( LoginPending newLoginPendingModel, cmd )
 
         _ ->
             ( pageModel, Cmd.none )
@@ -243,9 +208,6 @@ view model =
 
                 Lists listsModel ->
                     TaskListsPage.view listsModel
-
-                LoginPending loginPendingModel ->
-                    LoginPending.view loginPendingModel
     in
     { title = "TODO - Elm"
     , body = [ page ]
@@ -254,22 +216,15 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    let
-        pageSubs =
-            case model of
-                List listModel ->
-                    TaskListPage.subscriptions listModel
+    case model of
+        List listModel ->
+            TaskListPage.subscriptions listModel
 
-                Login loginModel ->
-                    LoginPage.subscriptions loginModel
+        Login loginModel ->
+            LoginPage.subscriptions loginModel
 
-                Lists listsModel ->
-                    TaskListsPage.subscriptions listsModel
-
-                LoginPending loginPendingModel ->
-                    LoginPending.subscriptions loginPendingModel
-    in
-    Sub.batch [ pageSubs, Auth.watchLocalStorage NoOp AuthorizationStoreChanged ]
+        Lists listsModel ->
+            TaskListsPage.subscriptions listsModel
 
 
 updateSession : (Session -> Session) -> Model -> Model
@@ -284,9 +239,6 @@ updateSession upd model =
         Lists page ->
             Lists { page | session = upd page.session }
 
-        LoginPending page ->
-            LoginPending { page | session = upd page.session }
-
 
 withSession : (Session -> a) -> Model -> a
 withSession with model =
@@ -298,9 +250,6 @@ withSession with model =
             with page.session
 
         Lists page ->
-            with page.session
-
-        LoginPending page ->
             with page.session
 
 

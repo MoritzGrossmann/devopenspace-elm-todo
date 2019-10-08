@@ -106,7 +106,7 @@ init wrapMsg session transitionTo =
       , modus = Login emptyLogin
       , result = RemoteData.NotAsked
       }
-    , Auth.updateLocalStorage resetedSession.authentication
+    , Cmd.none
     )
 
 
@@ -161,7 +161,6 @@ updateMain msg model =
                     ( { model | session = newSession, result = RemoteData.succeed () }
                     , Cmd.batch
                         [ Routes.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Lists)
-                        , Auth.updateLocalStorage newSession.authentication
                         ]
                         |> Cmd.map model.map
                     )
