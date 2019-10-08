@@ -1,4 +1,4 @@
-module Page.Login exposing
+module Login exposing
     ( Model
     , Msg
     , init
@@ -16,15 +16,12 @@ import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Encode as Enc
-import Navigation.Routes as Routes exposing (Route)
 import RemoteData exposing (WebData)
 import Session exposing (Session)
 
 
-type alias Model mainMsg =
+type alias Model =
     { session : Session
-    , map : Msg -> mainMsg
-    , transitionTo : Maybe Route
     , modus : Modus
     , result : WebData ()
     }
@@ -48,12 +45,12 @@ type alias RegisterModel =
     }
 
 
-isLoading : Model mainMsg -> Bool
+isLoading : Model -> Bool
 isLoading model =
     RemoteData.isLoading model.result
 
 
-isValidInput : Model mainMsg -> Bool
+isValidInput : Model -> Bool
 isValidInput model =
     case model.modus of
         Login loginModel ->
@@ -94,15 +91,13 @@ type Msg
     | SwitchToLogin
 
 
-init : (Msg -> mainMsg) -> Session -> Maybe Route -> ( Model mainMsg, Cmd msg )
-init wrapMsg session transitionTo =
+init : Session -> ( Model, Cmd msg )
+init session =
     let
-        resetedSession =
+        resetSession =
             Auth.clearAuthentication session
     in
-    ( { session = resetedSession
-      , map = wrapMsg
-      , transitionTo = transitionTo
+    ( { session = resetSession
       , modus = Login emptyLogin
       , result = RemoteData.NotAsked
       }
@@ -110,7 +105,7 @@ init wrapMsg session transitionTo =
     )
 
 
-update : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         ( changedMain, mainCmd ) =
@@ -132,7 +127,7 @@ update msg model =
             ( { changedMain | modus = Register newRegisterModel }, Cmd.batch [ mainCmd, registerCmd ] )
 
 
-updateMain : Msg -> Model mainMsg -> ( Model mainMsg, Cmd mainMsg )
+updateMain : Msg -> Model -> ( Model, Cmd Msg )
 updateMain msg model =
     case msg of
         SwitchToLogin ->
@@ -159,11 +154,7 @@ updateMain msg model =
                             updateSession model.session
                     in
                     ( { model | session = newSession, result = RemoteData.succeed () }
-                    , Cmd.batch
-                        -- TODO nach lists
-                        [ Routes.navigateTo model.session (model.transitionTo |> Maybe.withDefault Routes.Login)
-                        ]
-                        |> Cmd.map model.map
+                    , Cmd.none
                     )
 
                 Err error ->
@@ -180,7 +171,7 @@ updateMain msg model =
             ( model, Cmd.none )
 
 
-updateLogin : Model mainMsg -> Msg -> LoginModel -> ( LoginModel, Cmd mainMsg )
+updateLogin : Model -> Msg -> LoginModel -> ( LoginModel, Cmd Msg )
 updateLogin mainModel msg model =
     case msg of
         NoOp ->
@@ -197,7 +188,7 @@ updateLogin mainModel msg model =
 
         Submit ->
             if isValidInput mainModel then
-                ( model, Cmd.map mainModel.map (Auth.httpLogin mainModel.session.flags RemoteResult model.username model.password) )
+                ( model, Auth.httpLogin mainModel.session.flags RemoteResult model.username model.password )
 
             else
                 ( model, Cmd.none )
@@ -212,7 +203,7 @@ updateLogin mainModel msg model =
             ( model, Cmd.none )
 
 
-updateRegister : Model mainMsg -> Msg -> RegisterModel -> ( RegisterModel, Cmd mainMsg )
+updateRegister : Model -> Msg -> RegisterModel -> ( RegisterModel, Cmd Msg )
 updateRegister mainModel msg model =
     case msg of
         NoOp ->
@@ -229,7 +220,7 @@ updateRegister mainModel msg model =
 
         Submit ->
             if isValidInput mainModel then
-                ( model, Cmd.map mainModel.map (Auth.httpRegister mainModel.session.flags RemoteResult model.username model.password) )
+                ( model, Auth.httpRegister mainModel.session.flags RemoteResult model.username model.password )
 
             else
                 ( model, Cmd.none )
@@ -244,12 +235,12 @@ updateRegister mainModel msg model =
             ( model, Cmd.none )
 
 
-subscriptions : Model mainMsg -> Sub mainMsg
+subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.none
 
 
-view : Model mainMsg -> Html mainMsg
+view : Model -> Html Msg
 view model =
     H.section
         [ Attr.class "todoapp" ]
@@ -260,10 +251,9 @@ view model =
             Register registerModel ->
                 viewRegister model registerModel
         )
-        |> H.map model.map
 
 
-viewLogin : Model mainMsg -> LoginModel -> List (Html Msg)
+viewLogin : Model -> LoginModel -> List (Html Msg)
 viewLogin mainModel loginModel =
     [ H.section
         [ Attr.class "todoapp" ]
@@ -294,7 +284,7 @@ viewLogin mainModel loginModel =
     ]
 
 
-viewRegister : Model mainMsg -> RegisterModel -> List (Html Msg)
+viewRegister : Model -> RegisterModel -> List (Html Msg)
 viewRegister mainModel registerModel =
     [ H.section
         [ Attr.class "todoapp" ]
@@ -334,6 +324,6 @@ viewRegister mainModel registerModel =
     ]
 
 
-viewSubmitButton : Model mainMsg -> Html Msg
+viewSubmitButton : Model -> Html Msg
 viewSubmitButton mainModel =
     H.button [ Attr.style "display" "none", Attr.type_ "submit", Attr.disabled (not <| isValidInput mainModel) ] []
