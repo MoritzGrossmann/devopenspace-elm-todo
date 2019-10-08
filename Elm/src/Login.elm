@@ -24,13 +24,16 @@ type alias Model =
     { session : Session
     , username : String
     , password : String
+
+    -- Soll den Zustand von Requests erfassen
     , result : WebData ()
     }
 
 
 isLoading : Model -> Bool
 isLoading model =
-    RemoteData.isLoading model.result
+    -- TODO Implementieren
+    False
 
 
 isValidInput : Model -> Bool
@@ -48,16 +51,12 @@ type Msg
     | UpdateUsername String
     | UpdatePassword String
     | Submit
-    | RemoteResult (Result Http.Error (Session -> Session))
 
 
 init : Session -> ( Model, Cmd msg )
 init session =
-    let
-        resetSession =
-            Auth.clearAuthentication session
-    in
-    ( { session = resetSession
+    -- TODO: Auth. in Session reseten
+    ( { session = session
       , username = ""
       , password = ""
       , result = RemoteData.NotAsked
@@ -78,23 +77,10 @@ update msg model =
         UpdatePassword password ->
             ( { model | password = password }, Cmd.none )
 
-        RemoteResult res ->
-            case res of
-                Ok updateSession ->
-                    let
-                        newSession =
-                            updateSession model.session
-                    in
-                    ( { model | session = newSession, result = RemoteData.succeed () }
-                    , Cmd.none
-                    )
-
-                Err error ->
-                    ( { model | result = RemoteData.Failure error }, Cmd.none )
-
         Submit ->
             if isValidInput model then
-                ( { model | result = RemoteData.Loading }, Cmd.none )
+                -- TODO: result setzen
+                ( model, Cmd.none )
 
             else
                 ( model, Cmd.none )
@@ -136,4 +122,4 @@ view model =
 
 viewSubmitButton : Model -> Html Msg
 viewSubmitButton model =
-    H.button [ Attr.style "display" "none", Attr.type_ "submit", Attr.disabled (not <| isValidInput model) ] []
+    H.button [ Attr.type_ "submit", Attr.disabled (not <| isValidInput model) ] [ H.text "OK" ]
