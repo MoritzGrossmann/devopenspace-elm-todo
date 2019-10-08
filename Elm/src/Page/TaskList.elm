@@ -1,13 +1,11 @@
 module Page.TaskList exposing (Model, Msg, init, subscriptions, update, view)
 
-import Api.TaskList as ApiList
 import Browser.Dom as Dom
 import Html as H exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Json.Decode as Json
-import Models.TaskList as TaskList exposing (TaskList)
 import Navigation.Routes as Routes
 import RemoteData exposing (WebData)
 import Session exposing (Session)
