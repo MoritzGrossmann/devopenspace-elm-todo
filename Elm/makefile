@@ -9,10 +9,11 @@ release:
 deploy: build
 	cp ./node_modules/todomvc-app-css/index.css ../dist/static/index.css
 	cp ./node_modules/todomvc-common/base.css ../dist/static/base.css
+  cp ./app.css ../dist/static/app.css
 	cp ./dist/ports.js ../dist/static/ports.js
 	cp ./dist/app.js ../dist/static/todo.js
 
 .PHONY: clean
-clean: 
+clean:
 	rm -rf elm-stuff
 	rm -rf dist

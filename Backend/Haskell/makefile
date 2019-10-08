@@ -7,7 +7,7 @@ run: build
 	stack exec TodoServer-exe
 
 .PHONY: clean
-clean: 
+clean:
 	rm -rf .stack-work
 	rm -rf ./dist
 

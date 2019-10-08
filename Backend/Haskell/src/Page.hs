@@ -31,7 +31,7 @@ links Config{..} =
     cssSrcs = fmap fromString
       [ siteBaseUrl ++ "static/base.css"
       , siteBaseUrl ++ "static/index.css"
-      , siteBaseUrl ++ "static/style.css"
+      , siteBaseUrl ++ "static/app.css"
       ]
 
 
