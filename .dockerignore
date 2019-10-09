@@ -1,10 +1,13 @@
+Docker/
 **/.git/
 **/.cache/
 **/elm-stuff/
 **/node_modules/
 **/dist/
+**/dist-newstyle/
 **/.stack-work/
 **/.vscode/
 **/.gitignore
 **/todos.db
 **/settings.yaml
+**/*.gz
