@@ -1,13 +1,16 @@
 FROM codesimple/elm:0.19 as elmBuilder
 ENV BUILD=/app
-RUN mkdir -p $BUILD
-RUN mkdir -p $BUILD/dist
+RUN mkdir -p $BUILD && mkdir -p $BUILD/dist && mkdir -p $BUILD/static
 WORKDIR $BUILD
+COPY ./Elm/package.json .
+COPY ./Elm/package-lock.json .
+RUN npm install
+RUN cp ./node_modules/todomvc-app-css/index.css ./dist/index.css && cp ./node_modules/todomvc-common/base.css ./dist/base.css
+COPY ./Elm/static ./static
+RUN cp ./static/app.css ./dist/app.css
 COPY ./Elm/src ./src
 COPY ./Elm/elm.json .
-COPY ./Elm/ports.js .
-COPY ./Elm/app.css ./dist
-RUN elm make ./src/Main.elm --output ./dist/todo.js
+RUN npx parcel build ./static/embedded.js -o todo.js --no-source-maps
 
 FROM fpco/stack-build:lts-14.6 as haskellBuilder
 
@@ -35,10 +38,7 @@ WORKDIR /app
 COPY --from=haskellBuilder /app/dist /app
 
 RUN mkdir -p static
-COPY --from=elmBuilder /app/dist/app.css ./static/
-COPY --from=elmBuilder /app/dist/todo.js ./static/
-COPY --from=haskellBuilder /app/static ./static
-COPY --from=elmBuilder /app/ports.js ./static/
+COPY --from=elmBuilder /app/dist ./static
 
 RUN useradd app && chown -hR app /app && chown -hR app /data
 USER app

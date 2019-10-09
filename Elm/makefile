@@ -1,17 +1,16 @@
+npmInstall: package.json
+	npm install
+
 .PHONY: build
-build:
+build: npmInstall
 	npm run build
 
-.PHONY: release
-release:
-	npm run release
-
-deploy: build
-	cp ./node_modules/todomvc-app-css/index.css ../dist/static/index.css
-	cp ./node_modules/todomvc-common/base.css ../dist/static/base.css
-  cp ./app.css ../dist/static/app.css
-	cp ./dist/ports.js ../dist/static/ports.js
-	cp ./dist/app.js ../dist/static/todo.js
+deploy: npmInstall
+	npm run bundleJS
+	cp ./node_modules/todomvc-app-css/index.css ../Backend/Haskell/static/index.css
+	cp ./node_modules/todomvc-common/base.css ../Backend/Haskell/static/base.css
+	cp ./static/app.css ../Backend/Haskell/static/app.css
+	cp ./dist/todo.js ../Backend/Haskell/static/todo.js
 
 .PHONY: clean
 clean:

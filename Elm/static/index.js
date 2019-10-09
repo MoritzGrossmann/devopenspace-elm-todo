@@ -1,4 +1,5 @@
-import { Elm } from './src/Main.elm'
-// TODO: change to public API Url later
+import { Elm } from '../src/Main.elm'
+import { bindPorts } from './ports'
+
 var app = Elm.Main.init({ flags: { baseUrlPath: "/", apiUrl: "https://leastfixedpoint.net/todo/api" } });
-window.initPorts(app);
+bindPorts(app);

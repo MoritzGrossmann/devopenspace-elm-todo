@@ -1,4 +1,4 @@
-window.initPorts = function (app) {
+function bindPorts(app) {
   app.ports.store.subscribe(function (data) {
     let storageKey = data[0];
     let value = data[1];
@@ -22,3 +22,5 @@ window.initPorts = function (app) {
     }
   });
 }
+
+exports.bindPorts = bindPorts;

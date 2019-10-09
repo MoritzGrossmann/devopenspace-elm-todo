@@ -1,19 +1,10 @@
-.PHONY: build
-build: elm
-	$(MAKE) -C Backend/Haskell build
+.PHONY: runHaskell
+runHaskell: deployElm
+	$(MAKE) -C Backend/Haskell run
 
-.PHONY: elm
-elm:
-	$(MAKE) -C Elm build
-
-.PHONY: deploy
-deploy:
-	$(shell mkdir -p ./dist)
-	$(shell mkdir -p ./dist/static)
-	cp ./Backend/Haskell/static/* ./dist/static/ -r
+.PHONY: deployElm
+deployElm:
 	$(MAKE) -C Elm deploy
-	$(MAKE) -C Backend/Haskell deploy
-	cp ./Backend/Haskell/dist/* ./dist/ -r
 
 .PHONY: clean
 clean:
