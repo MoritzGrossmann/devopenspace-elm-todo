@@ -7,6 +7,7 @@ build: npmInstall
 
 deploy: npmInstall
 	npm run bundleJS
+	mkdir -p ../Backend/Haskell/static
 	cp ./node_modules/todomvc-app-css/index.css ../Backend/Haskell/static/index.css
 	cp ./node_modules/todomvc-common/base.css ../Backend/Haskell/static/base.css
 	cp ./static/app.css ../Backend/Haskell/static/app.css

@@ -1,5 +1,3 @@
-import { Elm } from '../src/Main.elm'
-import { bindPorts } from './ports'
+import { startApp } from './embedded'
 
-var app = Elm.Main.init({ flags: { baseUrlPath: "/", apiUrl: "https://leastfixedpoint.net/todo/api" } });
-bindPorts(app);
+startApp({ baseUrlPath: "/", apiUrl: "https://leastfixedpoint.net/todo/api" });

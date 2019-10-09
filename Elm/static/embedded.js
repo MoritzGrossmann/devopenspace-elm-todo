@@ -7,4 +7,4 @@ function startApp(flags) {
 }
 
 // Ans Browser-document binden, damit das Backend die Flags übergeben kann
-document.startApp = startApp;
+exports.startApp = document.startApp = startApp;

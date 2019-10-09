@@ -1,6 +1,0 @@
-.gitignore
-.vscode/
-.cache/
-elm-stuff/
-node_modules/
-dist/

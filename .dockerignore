@@ -1,1 +1,10 @@
-.git/
+**/.git/
+**/.cache/
+**/elm-stuff/
+**/node_modules/
+**/dist/
+**/.stack-work/
+**/.vscode/
+**/.gitignore
+**/todos.db
+**/settings.yaml
