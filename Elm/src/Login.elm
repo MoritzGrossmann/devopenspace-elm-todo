@@ -24,7 +24,7 @@ type alias Model =
     { session : Session
     , username : String
     , password : String
-    , result : WebData ()
+    , result : WebData String
     }
 
 
@@ -73,10 +73,20 @@ update msg model =
             ( model, Cmd.none )
 
         UpdateUsername username ->
-            ( { model | username = username }, Cmd.none )
+            ( { model
+                | username = username
+                , result = RemoteData.NotAsked
+              }
+            , Cmd.none
+            )
 
         UpdatePassword password ->
-            ( { model | password = password }, Cmd.none )
+            ( { model
+                | password = password
+                , result = RemoteData.NotAsked
+              }
+            , Cmd.none
+            )
 
         RemoteResult res ->
             case res of
@@ -84,8 +94,11 @@ update msg model =
                     let
                         newSession =
                             updateSession model.session
+
+                        userName =
+                            Auth.getUserName newSession |> Maybe.withDefault "---"
                     in
-                    ( { model | session = newSession, result = RemoteData.succeed () }
+                    ( { model | session = newSession, result = RemoteData.succeed userName }
                     , Cmd.none
                     )
 
@@ -94,10 +107,12 @@ update msg model =
 
         Submit ->
             if isValidInput model then
-                ( { model | result = RemoteData.Loading }, Cmd.none )
+                ( { model | result = RemoteData.Loading }
+                , Auth.httpLogin model.session.flags RemoteResult model.username model.password
+                )
 
             else
-                ( model, Cmd.none )
+                ( { model | result = RemoteData.NotAsked }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -131,6 +146,22 @@ view model =
                 []
             , viewSubmitButton model
             ]
+        , model.result
+            |> RemoteData.map (\name -> H.h2 [] [ H.text ("logged in: " ++ name) ])
+            |> (\res ->
+                    case res of
+                        RemoteData.Success html ->
+                            html
+
+                        RemoteData.Failure (Http.BadStatus 401) ->
+                            H.h2 [] [ H.text "Falscher Name/Passwort" ]
+
+                        RemoteData.Failure _ ->
+                            H.h2 [] [ H.text "Login Fehler" ]
+
+                        _ ->
+                            H.text ""
+               )
         ]
 
 
