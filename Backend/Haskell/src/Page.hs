@@ -29,10 +29,11 @@ links Config{..} =
   traverse_ (\ref -> H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href ref) cssSrcs
   where
     cssSrcs = fmap fromString
-      [ siteBaseUrl ++ "static/base.css"
-      , siteBaseUrl ++ "static/index.css"
-      , siteBaseUrl ++ "static/app.css"
+      [ baseUrl ++ "/static/base.css"
+      , baseUrl ++ "/static/index.css"
+      , baseUrl ++ "/static/app.css"
       ]
+    baseUrl = trimEnd siteBaseUrl
 
 
 scripts :: Config -> H.Html
@@ -42,4 +43,11 @@ scripts Config{..} = do
     [ "document.startApp({ baseUrlPath: '" ++ siteBaseUrl ++ "', apiUrl: '" ++ apiBaseUrl ++ "' });" ]
   where
     jsSrcs =
-      [ fromString $ siteBaseUrl ++ "static/todo.js" ]
+      [ fromString $ trimEnd siteBaseUrl ++ "/static/todo.js" ]
+
+trimEnd :: String -> String
+trimEnd = reverse . trimStart . reverse
+
+trimStart :: String -> String
+trimStart ('/':url) = url
+trimStart url = url
